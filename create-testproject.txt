@@ -1,0 +1,31 @@
+# Create a project structure
+mkdir test-project
+mkdir -p test-project/src/main/java/com/example
+mkdir -p test-project/src/main/kotlin
+mkdir -p test-project/src
+
+# Copy files to project
+cp TestService.java test-project/src/main/java/com/example/
+cp UserController.kt test-project/src/main/kotlin/
+cp UserModel.swift test-project/src/
+
+# Add another vulnerable file
+cat > test-project/src/main/java/com/example/AuthService.java << 'EOF'
+package com.example;
+
+public class AuthService {
+    private static final String ADMIN_PASSWORD = "admin123"; // Hardcoded password
+    
+    public boolean authenticate(String username, String password) {
+        if ("admin".equals(username) && ADMIN_PASSWORD.equals(password)) {
+            return true;
+        }
+        return false;
+    }
+    
+    public String buildQuery(String table, String condition) {
+        // SQL injection risk
+        return "SELECT * FROM " + table + " WHERE " + condition;
+    }
+}
+EOF
