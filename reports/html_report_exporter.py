@@ -5,8 +5,8 @@ from pathlib import Path
 class HtmlReportExporter:
     @staticmethod
     def export(result: AnalysisResult) -> str:
-        template_str = Path("reports/templates/html_report_template.html").read_text(encoding="utf-8")
-
+        template_path = Path(__file__).parent / "templates" / "html_report_template.html"
+        template_str = template_path.read_text(encoding="utf-8")
         template = Template(template_str)
 
         rendered = template.render(
