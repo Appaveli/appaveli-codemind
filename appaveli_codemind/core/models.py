@@ -17,6 +17,7 @@ class Language(Enum):
     DART = "dart"
     JAVASCRIPT = "javascript"
     TYPESCRIPT = "typescript"
+    PHP = "php"
 
 
 class BoilerplateType(Enum):
@@ -52,6 +53,15 @@ class BoilerplateType(Enum):
     REACT_COMPONENT = "react_component"
     NODE_SERVICE = "node_service"
     EXPRESS_ROUTE = "express_route"
+    
+    #PHP
+    LARAVEL_CONTROLLER = "laravel_controller"
+    LARAVEL_MODEL = "laravel_model"
+    LARAVEL_MIGRATION = "laravel_migration"
+    LARAVEL_SEEDER = "laravel_seeder"
+    LARAVEL_REQUEST = "laravel_request"
+    LARAVEL_RESOURCE = "laravel_resource"
+    LARAVEL_ROUTE = "laravel_route"
     
     # Cross-platform
     API_CLIENT = "api_client"

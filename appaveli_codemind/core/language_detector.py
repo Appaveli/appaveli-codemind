@@ -6,7 +6,7 @@ import os
 import re
 from pathlib import Path
 from typing import Optional, Dict, List
-from core.models import Language
+from appaveli_codemind.core.models import Language
 
 
 class LanguageDetector:
@@ -30,6 +30,7 @@ class LanguageDetector:
         '.ts': Language.TYPESCRIPT,
         '.tsx': Language.TYPESCRIPT,
         '.mjs': Language.JAVASCRIPT,
+        '.php': Language.PHP,
     }
     
     # Content-based detection patterns
@@ -85,6 +86,18 @@ class LanguageDetector:
             r'export\s+type',
             r':\s*\w+(\[\])?(\s*\|\s*\w+)*',  # Type annotations
         ],
+        Language.PHP: [
+            r'<\?php',
+            r'namespace\s+[\w\\]+;',
+            r'use\s+[\w\\]+;',
+            r'class\s+\w+',
+            r'function\s+\w+\(',
+            r'Route::(?:get|post|put|delete|apiResource)',
+            r'public\s+function\s+\w+\(',
+            r'protected\s+function\s+\w+\(',
+            r'private\s+function\s+\w+\(',
+        ],
+
     }
     
     @classmethod
