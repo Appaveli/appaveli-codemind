@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CodeMind Report: {{ filename }}</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 2rem;
+      background: #f8f9fa;
+      color: #212529;
+    }
+    h1 { color: #2c3e50; }
+    .summary, .issue {
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .severity-high { border-left: 6px solid #dc3545; }
+    .severity-medium { border-left: 6px solid #ffc107; }
+    .severity-low { border-left: 6px solid #17a2b8; }
+    .severity-critical { border-left: 6px solid #a71d2a; }
+    .severity-info { border-left: 6px solid #6c757d; }
+    code {
+      background: #e9ecef;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📄 Code Analysis Report: {{ filename }}</h1>
+
+  <div class="summary">
+    <h2>🧾 Summary</h2>
+    <p><strong>Language:</strong> {{ language }}</p>
+    <p><strong>Lines of Code:</strong> {{ line_count }}</p>
+    <p><strong>Timestamp:</strong> {{ timestamp }}</p>
+  </div>
+
+  {% for issue in issues %}
+    <div class="issue severity-{{ issue.severity.value }}">
+      <h3>
+        {% if issue.severity.value == 'critical' or issue.severity.value == 'high' %}
+          🚨
+        {% elif issue.severity.value == 'medium' %}
+          ⚠️
+        {% else %}
+          ℹ️
+        {% endif %}
+        {{ issue.type.title() }} (Line {{ issue.line }})
+      </h3>
+      <p><strong>Description:</strong> {{ issue.description }}</p>
+      <p><strong>Fix:</strong> {{ issue.fix_suggestion }}</p>
+    </div>
+  {% endfor %}
+
+</body>
+</html>
