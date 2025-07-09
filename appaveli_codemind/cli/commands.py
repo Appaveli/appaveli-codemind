@@ -76,72 +76,93 @@ def cli(ctx, api_key, verbose):
 
 @cli.command()
 @click.option('--file', '-f', required=True, help='File to analyze')
-@click.option('--output', '-o', help='Output file for analysis report (JSON)')
+@click.option('--output', '-o', help='Output file for raw JSON report')
+@click.option('--report', type=click.Choice(['markdown', 'html']), help='Export analysis report in specified format')
+@click.option('--summary', is_flag=True, help='Only display summary info and exit')
 @click.pass_context
-def analyze(ctx, file, output):
+def analyze(ctx, file, output, report, summary):
     """Analyze a code file for issues, suggestions, and metrics"""
-    
+
     if not validate_file_path(file):
         console.print(f"[red]❌ Error: File not found or not accessible: {file}[/red]")
         ctx.exit(1)
-    
+
     agent = ctx.obj['agent']
-    
+
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         console=console
     ) as progress:
         task = progress.add_task("🔍 Analyzing file...", total=None)
-        
+
         try:
             result = agent.analyze_file(file)
         except Exception as e:
             console.print(f"[red]❌ Analysis failed: {e}[/red]")
             ctx.exit(1)
-    
-    # Display results
-    console.print(f"\n[bold green]📊 Analysis Results for {file}[/bold green]")
-    
-    # Basic info table
+
+    # Build summary panel once
     info_table = Table(show_header=False, box=None)
     info_table.add_row("[cyan]Language:[/cyan]", result.language.value.title())
     info_table.add_row("[cyan]Lines of code:[/cyan]", str(result.line_count))
     info_table.add_row("[cyan]Analysis time:[/cyan]", result.analysis_timestamp.strftime("%Y-%m-%d %H:%M:%S"))
-    
-    console.print(Panel(info_table, title="File Information", border_style="blue"))
-    
-    # Security issues
+
+    panel_title = "File Summary" if summary else "File Information"
+    console.print(Panel(info_table, title=panel_title, border_style="blue"))
+
+    if summary:
+        return
+
+    console.print(f"\n[bold green]📊 Analysis Results for {file}[/bold green]")
+
+    # Save pretty report if requested
+    if report:
+        from reports.exporter import ReportExporter
+
+        pretty_report = ReportExporter.export(result, format=report)
+        file_stem = Path(file).stem
+        ext = 'md' if report == 'markdown' else 'html'
+        report_file = f"{file_stem}_report.{ext}"
+
+        with open(report_file, 'w') as f:
+            f.write(pretty_report)
+
+        console.print(f"\n[blue]📝 {report.title()} report saved to {report_file}[/blue]")
+
+        if report == 'html':
+            import webbrowser
+            webbrowser.open(report_file)
+
+    # Display security issues
     if result.security_issues:
         console.print(f"\n[red]🚨 Security Issues Found ({len(result.security_issues)}):[/red]")
-        
         for i, issue in enumerate(result.security_issues, 1):
             severity_color = {
                 "critical": "red",
-                "high": "red", 
+                "high": "red",
                 "medium": "yellow",
                 "low": "blue",
                 "info": "dim"
             }.get(issue.severity.value, "white")
-            
+
             console.print(f"  {i}. [{severity_color}]Line {issue.line}: {issue.type.upper()}[/{severity_color}]")
             console.print(f"     {issue.description}")
             console.print(f"     💡 Fix: {issue.fix_suggestion}\n")
     else:
         console.print("\n[green]✅ No security issues found[/green]")
-    
-    # Save report if output specified
+
+    # Save raw JSON output if requested
     if output:
         import json
         from dataclasses import asdict
-        
-        # Convert to dict and handle datetime serialization
+
         report_data = asdict(result)
         report_data['analysis_timestamp'] = result.analysis_timestamp.isoformat()
-        
+
         with open(output, 'w') as f:
             json.dump(report_data, f, indent=2, default=str)
-        
+
         console.print(f"\n[green]📄 Analysis report saved to {output}[/green]")
 
 

@@ -1,0 +1,45 @@
+{
+  "file_path": "UserController.php",
+  "language": "Language.PHP",
+  "line_count": 68,
+  "security_issues": [
+    {
+      "type": "authorization_issue",
+      "severity": "SecuritySeverity.HIGH",
+      "line": 8,
+      "column": null,
+      "description": "The API endpoints do not have any authorization checks, allowing any user to access and modify user data.",
+      "fix_suggestion": "Implement middleware to check if the user is authenticated and authorized to perform actions on user data.",
+      "file_path": null,
+      "rule_id": null,
+      "cwe_id": null
+    },
+    {
+      "type": "input_validation",
+      "severity": "SecuritySeverity.MEDIUM",
+      "line": 35,
+      "column": null,
+      "description": "The update method does not validate input data before updating the user, which could lead to invalid data being stored.",
+      "fix_suggestion": "Add validation rules similar to the store method to ensure only valid data is updated.",
+      "file_path": null,
+      "rule_id": null,
+      "cwe_id": null
+    },
+    {
+      "type": "mass_assignment",
+      "severity": "SecuritySeverity.HIGH",
+      "line": 35,
+      "column": null,
+      "description": "The update method uses $request->all() which can lead to mass assignment vulnerabilities if not properly guarded.",
+      "fix_suggestion": "Use $request->only(['field1', 'field2', ...]) to specify which fields can be updated, and ensure the User model has appropriate fillable or guarded properties.",
+      "file_path": null,
+      "rule_id": null,
+      "cwe_id": null
+    }
+  ],
+  "code_suggestions": [],
+  "complexity_score": null,
+  "maintainability_score": null,
+  "test_coverage_estimate": null,
+  "analysis_timestamp": "2025-07-09T09:01:24.471596"
+}

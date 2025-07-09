@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CodeMind Report: UserController.php</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 2rem;
+      background: #f8f9fa;
+      color: #212529;
+    }
+    h1 { color: #2c3e50; }
+    .summary, .issue {
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .severity-high { border-left: 6px solid #dc3545; }
+    .severity-medium { border-left: 6px solid #ffc107; }
+    .severity-low { border-left: 6px solid #17a2b8; }
+    .severity-critical { border-left: 6px solid #a71d2a; }
+    .severity-info { border-left: 6px solid #6c757d; }
+    code {
+      background: #e9ecef;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📄 Code Analysis Report: UserController.php</h1>
+
+  <div class="summary">
+    <h2>🧾 Summary</h2>
+    <p><strong>Language:</strong> Php</p>
+    <p><strong>Lines of Code:</strong> 68</p>
+    <p><strong>Timestamp:</strong> 2025-07-09 09:01:24</p>
+  </div>
+
+  
+    <div class="issue severity-high">
+      <h3>
+        
+          🚨
+        
+        Authorization_Issue (Line 8)
+      </h3>
+      <p><strong>Description:</strong> The API endpoints do not have any authorization checks, allowing any user to access and modify user data.</p>
+      <p><strong>Fix:</strong> Implement middleware to check if the user is authenticated and authorized to perform actions on user data.</p>
+    </div>
+  
+    <div class="issue severity-medium">
+      <h3>
+        
+          ⚠️
+        
+        Input_Validation (Line 35)
+      </h3>
+      <p><strong>Description:</strong> The update method does not validate input data before updating the user, which could lead to invalid data being stored.</p>
+      <p><strong>Fix:</strong> Add validation rules similar to the store method to ensure only valid data is updated.</p>
+    </div>
+  
+    <div class="issue severity-high">
+      <h3>
+        
+          🚨
+        
+        Mass_Assignment (Line 35)
+      </h3>
+      <p><strong>Description:</strong> The update method uses $request->all() which can lead to mass assignment vulnerabilities if not properly guarded.</p>
+      <p><strong>Fix:</strong> Use $request->only(['field1', 'field2', ...]) to specify which fields can be updated, and ensure the User model has appropriate fillable or guarded properties.</p>
+    </div>
+  
+
+</body>
+</html>
