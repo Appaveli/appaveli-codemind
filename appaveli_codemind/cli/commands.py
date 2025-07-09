@@ -11,9 +11,9 @@ from rich.syntax import Syntax
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from pathlib import Path
 
-from core.agent import CodeMindAgent
-from core.models import BoilerplateType, RefactorType
-from utils.validation import validate_file_path, validate_api_key
+from appaveli_codemind.core.agent import CodeMindAgent
+from appaveli_codemind.core.models import BoilerplateType, RefactorType
+from appaveli_codemind.utils.validation import validate_file_path, validate_api_key
 
 console = Console()
 
@@ -39,17 +39,17 @@ LOGO = """
 """
 
 
-@click.group()
+@click.group(invoke_without_command=True)
 @click.option('--api-key', envvar='OPENAI_API_KEY', help='OpenAI API key')
 @click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
-@click.version_option(version='0.1.0', prog_name='Appaveli CodeMind')
+@click.version_option(version='0.2.0', prog_name='Appaveli CodeMind')
 @click.pass_context
 def cli(ctx, api_key, verbose):
     """
     Appaveli CodeMind - Your Intelligent Code Assistant
     
     AI-powered code refactoring, security scanning, and generation for Java, 
-    Kotlin, Swift, C++, Dart, and JavaScript.
+    Kotlin, Swift, C++, Dart, PHP, and JavaScript.
     """
     # Display logo on first run
     if ctx.invoked_subcommand is None:
@@ -166,7 +166,7 @@ def refactor(ctx, file, type, output, backup):
     
     # Create backup if requested
     if backup:
-        from utils.file_utils import FileUtils
+        from appaveli_codemind.utils.file_utils import FileUtils
         backup_path = FileUtils.backup_file(file)
         console.print(f"[dim]📋 Backup created: {backup_path}[/dim]")
     
@@ -210,7 +210,7 @@ def refactor(ctx, file, type, output, backup):
         console.print(Panel(syntax, title="Code Preview"))
         
         if click.confirm("Save refactored code to original file?"):
-            from utils.file_utils import FileUtils
+            from appaveli_codemind.utils.file_utils import FileUtils
             FileUtils.write_file(file, result.refactored_code)
             console.print(f"[green]✅ Refactored code saved to {file}[/green]")
     else:
@@ -285,6 +285,7 @@ def generate(ctx, type, name, package, fields, output):
             'cpp': '.cpp',
             'dart': '.dart',
             'javascript': '.js',
+            'php': '.php',
         }
         
         extension = extension_map.get(result.language.value, '.txt')
@@ -292,7 +293,7 @@ def generate(ctx, type, name, package, fields, output):
         
         filename = click.prompt("Enter filename", default=suggested_filename)
         
-        from utils.file_utils import FileUtils
+        from appaveli_codemind.utils.file_utils import FileUtils
         FileUtils.write_file(filename, result.generated_code)
         console.print(f"[green]✅ Code saved to {filename}[/green]")
 
@@ -426,7 +427,7 @@ def version():
 @cli.command()
 def info():
     """Show system information and supported languages"""
-    from core.language_detector import LanguageDetector
+    from appaveli_codemind.core.language_detector import LanguageDetector
     
     console.print("[bold blue]📋 Appaveli CodeMind System Information[/bold blue]\n")
     

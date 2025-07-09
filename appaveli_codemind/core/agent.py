@@ -381,6 +381,42 @@ class CodeMindAgent:
             - Material Design 3 components
             - Navigation handling
             """,
+            # Add Laravel types here
+            BoilerplateType.LARAVEL_CONTROLLER: f"""
+            Create a Laravel controller in PHP named {name}.
+            - Use the proper namespace and class structure
+            - Include index, show, store, update, and destroy methods
+            - Return JSON responses
+            """,
+            BoilerplateType.LARAVEL_MODEL: f"""
+            Create a Laravel Eloquent model in PHP named {name}.
+            - Include fillable fields: {kwargs.get('fields', 'name, email')}
+            - Use appropriate namespace and PSR-4 structure
+            """,
+            BoilerplateType.LARAVEL_MIGRATION: f"""
+            Create a Laravel migration in PHP to create a '{name.lower()}' table.
+            - Use Schema builder
+            - Include common fields like id, timestamps, and: {kwargs.get('fields', 'name, email')}
+            """,
+            BoilerplateType.LARAVEL_SEEDER: f"""
+            Create a Laravel seeder class in PHP named {name}Seeder.
+            - Use DB::table to insert sample data
+            - Include use statements and namespace
+            """,
+            BoilerplateType.LARAVEL_REQUEST: f"""
+            Create a Laravel FormRequest class in PHP named {name}Request.
+            - Include validation rules
+            - Use proper namespace and authorize() method
+            """,
+            BoilerplateType.LARAVEL_RESOURCE: f"""
+            Create a Laravel API Resource in PHP named {name}Resource.
+            - Implement the toArray method
+            - Map fields from the model to API output
+            """,
+            BoilerplateType.LARAVEL_ROUTE: f"""
+            Define Laravel API routes in PHP for the {name} controller.
+            - Use Route::apiResource('{name.lower()}', {name}Controller::class);
+            """,
             BoilerplateType.REACT_COMPONENT: f"""
             Create a React component named {name} with:
             - Functional component with hooks
@@ -412,7 +448,8 @@ class CodeMindAgent:
             Language.SWIFT: "XCTest",
             Language.DART: "Flutter test framework",
             Language.JAVASCRIPT: "Jest",
-            Language.CPP: "Google Test"
+            Language.CPP: "Google Test",
+            Language.PHP: "PHPUnit",
         }
         
         framework = test_frameworks.get(language, "appropriate testing framework")
@@ -463,6 +500,13 @@ class CodeMindAgent:
             BoilerplateType.FLUTTER_SERVICE: Language.DART,
             BoilerplateType.REACT_COMPONENT: Language.JAVASCRIPT,
             BoilerplateType.NODE_SERVICE: Language.JAVASCRIPT,
+            BoilerplateType.LARAVEL_CONTROLLER: Language.PHP,
+            BoilerplateType.LARAVEL_MODEL: Language.PHP,
+            BoilerplateType.LARAVEL_MIGRATION: Language.PHP,
+            BoilerplateType.LARAVEL_SEEDER: Language.PHP,
+            BoilerplateType.LARAVEL_REQUEST: Language.PHP,
+            BoilerplateType.LARAVEL_RESOURCE: Language.PHP,
+            BoilerplateType.LARAVEL_ROUTE: Language.PHP,
         }
         
         return template_language_map.get(template_type, Language.JAVA)
