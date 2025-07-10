@@ -73,97 +73,105 @@ def cli(ctx, api_key, verbose):
     if verbose:
         console.print(f"[dim]Initialized Appaveli CodeMind[/dim]")
 
-
 @cli.command()
-@click.option('--file', '-f', required=True, help='File to analyze')
-@click.option('--output', '-o', help='Output file for raw JSON report')
+@click.option('--file', '-f', help='Single file to analyze')
+@click.option('--folder', help='Analyze all supported files in this folder')
+@click.option('--output', '-o', help='Output file for raw JSON report (single file mode only)')
 @click.option('--report', type=click.Choice(['markdown', 'html']), help='Export analysis report in specified format')
 @click.option('--summary', is_flag=True, help='Only display summary info and exit')
 @click.pass_context
-def analyze(ctx, file, output, report, summary):
-    """Analyze a code file for issues, suggestions, and metrics"""
-
-    if not validate_file_path(file):
-        console.print(f"[red]❌ Error: File not found or not accessible: {file}[/red]")
+def analyze(ctx, file, folder, output, report, summary):
+    """Analyze a code file or all files in a folder for issues, suggestions, and metrics"""
+    if not file and not folder:
+        console.print("[red]❌ Error: You must provide either --file or --folder[/red]")
         ctx.exit(1)
 
     agent = ctx.obj['agent']
+    files_to_analyze = []
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console
-    ) as progress:
-        task = progress.add_task("🔍 Analyzing file...", total=None)
-
-        try:
-            result = agent.analyze_file(file)
-        except Exception as e:
-            console.print(f"[red]❌ Analysis failed: {e}[/red]")
+    # Collect files
+    if file:
+        if not validate_file_path(file):
+            console.print(f"[red]❌ File not found: {file}[/red]")
+            ctx.exit(1)
+        files_to_analyze = [Path(file)]
+    elif folder:
+        from appaveli_codemind.core.language_detector import LanguageDetector
+        folder_path = Path(folder)
+        if not folder_path.exists() or not folder_path.is_dir():
+            console.print(f"[red]❌ Folder not found: {folder}[/red]")
             ctx.exit(1)
 
-    # Build summary panel once
-    info_table = Table(show_header=False, box=None)
-    info_table.add_row("[cyan]Language:[/cyan]", result.language.value.title())
-    info_table.add_row("[cyan]Lines of code:[/cyan]", str(result.line_count))
-    info_table.add_row("[cyan]Analysis time:[/cyan]", result.analysis_timestamp.strftime("%Y-%m-%d %H:%M:%S"))
+        supported_exts = LanguageDetector.get_supported_extensions()
+        for ext in supported_exts:
+            files_to_analyze.extend(folder_path.rglob(f'*{ext}'))
 
-    panel_title = "File Summary" if summary else "File Information"
-    console.print(Panel(info_table, title=panel_title, border_style="blue"))
+    if not files_to_analyze:
+        console.print("[yellow]⚠️ No supported files found.[/yellow]")
+        ctx.exit(0)
 
-    if summary:
-        return
+    for target_file in files_to_analyze:
+        with Progress(SpinnerColumn(), TextColumn(f"[progress.description]Analyzing {target_file.name}..."), console=console) as progress:
+            task = progress.add_task("🔍", total=None)
+            try:
+                result = agent.analyze_file(str(target_file))
+            except Exception as e:
+                console.print(f"[red]❌ Failed to analyze {target_file.name}: {e}[/red]")
+                continue
 
-    console.print(f"\n[bold green]📊 Analysis Results for {file}[/bold green]")
+        info_table = Table(show_header=False, box=None)
+        info_table.add_row("[cyan]Language:[/cyan]", result.language.value.title())
+        info_table.add_row("[cyan]Lines of code:[/cyan]", str(result.line_count))
+        info_table.add_row("[cyan]Analysis time:[/cyan]", result.analysis_timestamp.strftime("%Y-%m-%d %H:%M:%S"))
 
-    # Save pretty report if requested
-    if report:
-        from reports.exporter import ReportExporter
+        panel_title = "File Summary" if summary else f"File Information — {target_file.name}"
+        console.print(Panel(info_table, title=panel_title, border_style="blue"))
 
-        pretty_report = ReportExporter.export(result, format=report)
-        file_stem = Path(file).stem
-        ext = 'md' if report == 'markdown' else 'html'
-        report_file = f"{file_stem}_report.{ext}"
+        if summary:
+            continue
 
-        with open(report_file, 'w') as f:
-            f.write(pretty_report)
+        console.print(f"\n[bold green]📊 Analysis Results for {target_file.name}[/bold green]")
 
-        console.print(f"\n[blue]📝 {report.title()} report saved to {report_file}[/blue]")
+        # Export formatted report
+        if report:
+            from reports.exporter import ReportExporter
 
-        if report == 'html':
-            import webbrowser
-            webbrowser.open(report_file)
+            pretty_report = ReportExporter.export(result, format=report)
+            file_stem = target_file.stem
+            ext = 'md' if report == 'markdown' else 'html'
+            report_file = f"{file_stem}_report.{ext}"
 
-    # Display security issues
-    if result.security_issues:
-        console.print(f"\n[red]🚨 Security Issues Found ({len(result.security_issues)}):[/red]")
-        for i, issue in enumerate(result.security_issues, 1):
-            severity_color = {
-                "critical": "red",
-                "high": "red",
-                "medium": "yellow",
-                "low": "blue",
-                "info": "dim"
-            }.get(issue.severity.value, "white")
+            with open(report_file, 'w') as f:
+                f.write(pretty_report)
 
-            console.print(f"  {i}. [{severity_color}]Line {issue.line}: {issue.type.upper()}[/{severity_color}]")
-            console.print(f"     {issue.description}")
-            console.print(f"     💡 Fix: {issue.fix_suggestion}\n")
-    else:
-        console.print("\n[green]✅ No security issues found[/green]")
+            console.print(f"\n[blue]📝 {report.title()} report saved to {report_file}[/blue]")
 
-    # Save raw JSON output if requested
-    if output:
-        import json
-        from dataclasses import asdict
+        # Show security issues
+        if result.security_issues:
+            console.print(f"\n[red]🚨 Security Issues Found ({len(result.security_issues)}):[/red]")
+            for i, issue in enumerate(result.security_issues, 1):
+                color = {
+                    "critical": "red", "high": "red",
+                    "medium": "yellow", "low": "blue", "info": "dim"
+                }.get(issue.severity.value, "white")
+                console.print(f"  {i}. [{color}]Line {issue.line}: {issue.type.upper()}[/{color}]")
+                console.print(f"     {issue.description}")
+                console.print(f"     💡 Fix: {issue.fix_suggestion}\n")
+        else:
+            console.print("[green]✅ No security issues found[/green]")
 
-        report_data = asdict(result)
-        report_data['analysis_timestamp'] = result.analysis_timestamp.isoformat()
+        # Save raw JSON report only in single file mode
+        if output and file:
+            from dataclasses import asdict
+            import json
 
-        with open(output, 'w') as f:
-            json.dump(report_data, f, indent=2, default=str)
+            json_data = asdict(result)
+            json_data['analysis_timestamp'] = result.analysis_timestamp.isoformat()
 
-        console.print(f"\n[green]📄 Analysis report saved to {output}[/green]")
+            with open(output, 'w') as f:
+                json.dump(json_data, f, indent=2)
+
+            console.print(f"\n[green]📄 JSON report saved to {output}[/green]")
 
 
 @cli.command()
