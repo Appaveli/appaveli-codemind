@@ -134,7 +134,7 @@ def analyze(ctx, file, folder, output, report, summary):
 
         # Export formatted report
         if report:
-            from reports.exporter import ReportExporter
+            from appaveli_codemind.reports.exporter import ReportExporter
 
             pretty_report = ReportExporter.export(result, format=report)
             file_stem = target_file.stem
@@ -145,7 +145,8 @@ def analyze(ctx, file, folder, output, report, summary):
                 f.write(pretty_report)
 
             console.print(f"\n[blue]📝 {report.title()} report saved to {report_file}[/blue]")
-
+        if result.summary:
+         console.print(Panel(result.summary, title="📘 Code Summary", border_style="magenta"))
         # Show security issues
         if result.security_issues:
             console.print(f"\n[red]🚨 Security Issues Found ({len(result.security_issues)}):[/red]")

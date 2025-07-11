@@ -182,3 +182,4 @@ class AnalysisResult:
     maintainability_score: Optional[float]
     test_coverage_estimate: Optional[float]
     analysis_timestamp: datetime
+    summary: Optional[str] = None

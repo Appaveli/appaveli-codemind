@@ -74,6 +74,9 @@ class CodeMindAgent:
         security_issues = self._scan_code_security(content, language)
         code_suggestions = self._get_code_suggestions(content, language)
         
+        # Generate high-level summary
+        summary = self._summarize_code(content, language)
+
         # Calculate metrics
         line_count = len(content.split('\n'))
         
@@ -86,7 +89,8 @@ class CodeMindAgent:
             complexity_score=None,
             maintainability_score=None,
             test_coverage_estimate=None,
-            analysis_timestamp=datetime.now()
+            analysis_timestamp=datetime.now(),
+            summary=summary,
         )
     
     def refactor_file(
@@ -524,3 +528,28 @@ class CodeMindAgent:
         ]
         
         return recommendations
+    
+    def _summarize_code(self, code: str, language: Language) -> str:
+        """Generate a high-level summary of code using AI"""
+        prompt = f"""
+        Summarize the following {language.value} code.
+
+        - Identify the purpose of the file
+        - Highlight major classes or functions
+        - Mention any key logic or responsibilities
+
+        Return a clear, professional summary under 150 words.
+
+        Code:
+        {code[:3000]}  # Truncate for token cost efficiency
+        """
+
+        try:
+            response = self.openai_client.chat_completion([
+                {"role": "system", "content": "You are a senior software engineer who writes clear and concise code summaries."},
+                {"role": "user", "content": prompt}
+            ])
+            return response['content'].strip()
+        except Exception as e:
+            self.logger.warning(f"Code summarization failed: {e}")
+            return "Summary not available."

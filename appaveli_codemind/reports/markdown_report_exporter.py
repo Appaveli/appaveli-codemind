@@ -13,6 +13,11 @@ class MarkdownReportExporter:
             f"- **Timestamp:** {result.analysis_timestamp.strftime('%Y-%m-%d %H:%M:%S')}",
             ""
         ]
+        # Optional code summary
+        if result.summary:
+            lines.append("## 📘 Code Summary")
+            lines.append(result.summary.strip())
+            lines.append("")
 
         if result.security_issues:
             lines.append("## 🚨 Security Issues")
