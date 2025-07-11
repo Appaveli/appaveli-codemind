@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "appaveli-codemind"
-version = "0.3.0"
+version = "0.4.0"
 description = "AI-powered code refactoring, security scanning, and generation"
 readme = "README.md"
 authors = [
@@ -53,4 +53,7 @@ dev = [
 appaveli-codemind = "appaveli_codemind.main:main"
 
 [tool.setuptools]
-packages = ["appaveli_codemind"]  # ✅ This avoids the "multiple top-level packages" error
+packages = ["appaveli_codemind"]
+
+[tool.setuptools.package-data]
+"appaveli_codemind.reports.templates" = ["*.html"]

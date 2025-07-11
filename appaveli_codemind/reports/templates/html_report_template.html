@@ -41,7 +41,10 @@
     <p><strong>Lines of Code:</strong> {{ line_count }}</p>
     <p><strong>Timestamp:</strong> {{ timestamp }}</p>
   </div>
-
+  <div class="summary">
+    <h2>📘 Code Summary</h2>
+    <p>{{ summary }}</p>
+  </div>
   {% for issue in issues %}
     <div class="issue severity-{{ issue.severity.value }}">
       <h3>
