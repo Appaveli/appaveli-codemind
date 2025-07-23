@@ -47,31 +47,29 @@ LOGO = """
 def cli(ctx, api_key, verbose):
     """
     Appaveli CodeMind - Your Intelligent Code Assistant
-    
-    AI-powered code refactoring, security scanning, and generation for Java, 
-    Kotlin, Swift, C++, Dart, PHP, and JavaScript.
     """
-    # Display logo on first run
-    if ctx.invoked_subcommand is None:
-        console.print(LOGO)
+    console.print(LOGO)
+
+    resolved_api_key = api_key or os.getenv("OPENAI_API_KEY")
+
+    cmd = ctx.invoked_subcommand
+
+    if cmd is None:
         console.print("\n[green]Welcome to Appaveli CodeMind![/green]")
         console.print("Run [bold]appaveli-codemind --help[/bold] to see all available commands.\n")
         return
-    
-    # Skip API key validation for commands that don't need AI
-    commands_skipping_api_key = ["version", "info"]
-    if ctx.invoked_subcommand not in commands_skipping_api_key:
-     resolved_api_key = api_key or os.getenv("OPENAI_API_KEY")
-    if not resolved_api_key:
+
+    no_key_required = ["version", "info"]
+
+    if cmd not in no_key_required and not resolved_api_key:
         console.print("[red]❌ Error: OpenAI API key is required.[/red]")
         console.print("Set the OPENAI_API_KEY environment variable or use --api-key option.")
         ctx.exit(1)
-    
-    # Initialize context
+
     ctx.ensure_object(dict)
-    ctx.obj['agent'] = CodeMindAgent(api_key=api_key)
+    ctx.obj['agent'] = CodeMindAgent(api_key=resolved_api_key)
     ctx.obj['verbose'] = verbose
-    
+
     if verbose:
         console.print(f"[dim]Initialized Appaveli CodeMind[/dim]")
 
