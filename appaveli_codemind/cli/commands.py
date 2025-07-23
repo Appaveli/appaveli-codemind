@@ -42,7 +42,7 @@ LOGO = """
 @click.group(invoke_without_command=True)
 @click.option('--api-key', envvar='OPENAI_API_KEY', help='OpenAI API key')
 @click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
-@click.version_option(version='0.2.0', prog_name='Appaveli CodeMind')
+@click.version_option(version='1.0.0', prog_name='Appaveli CodeMind')
 @click.pass_context
 def cli(ctx, api_key, verbose):
     """
