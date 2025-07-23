@@ -58,8 +58,10 @@ def cli(ctx, api_key, verbose):
         console.print("Run [bold]appaveli-codemind --help[/bold] to see all available commands.\n")
         return
     
-    # Validate API key
-    resolved_api_key = api_key or os.getenv("OPENAI_API_KEY")
+    # Skip API key validation for commands that don't need AI
+    commands_skipping_api_key = ["version", "info"]
+    if ctx.invoked_subcommand not in commands_skipping_api_key:
+     resolved_api_key = api_key or os.getenv("OPENAI_API_KEY")
     if not resolved_api_key:
         console.print("[red]❌ Error: OpenAI API key is required.[/red]")
         console.print("Set the OPENAI_API_KEY environment variable or use --api-key option.")
