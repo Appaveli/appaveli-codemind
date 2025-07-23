@@ -37,6 +37,7 @@ def test_cli_no_command_prints_logo(runner):
 import os
 import tempfile
 import pytest
+from click.exceptions import ClickException
 from click.testing import CliRunner
 from appaveli_codemind.cli.commands import cli
 
@@ -44,6 +45,7 @@ from appaveli_codemind.cli.commands import cli
 @pytest.fixture
 def runner():
     return CliRunner()
+
 
 
 def test_cli_missing_api_key_for_analyze(runner):
@@ -54,10 +56,9 @@ def test_cli_missing_api_key_for_analyze(runner):
         env = os.environ.copy()
         env.pop("OPENAI_API_KEY", None)
 
-        # Disable standalone_mode so exceptions propagate properly
-        result = runner.invoke(cli, ["analyze", "--file", temp.name], env=env, obj={}, standalone_mode=False)
+        with pytest.raises(ClickException) as exc_info:
+            runner.invoke(cli, ["analyze", "--file", temp.name], env=env, obj={}, standalone_mode=False)
+
+        assert "OpenAI API key is required" in str(exc_info.value)
 
     os.unlink(temp.name)
-
-    assert result.exit_code == 1
-    assert "OpenAI API key is required" in result.stderr
