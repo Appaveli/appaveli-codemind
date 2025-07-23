@@ -30,20 +30,13 @@ class FileUtils:
             raise IOError(f"Error reading file {file_path}: {e}")
     
     @staticmethod
-    def write_file(file_path: str, content: str, encoding: str = 'utf-8') -> None:
-        """
-        Write content to file safely
-        
-        Args:
-            file_path: Path to file
-            content: Content to write
-            encoding: File encoding (default: utf-8)
-        """
+    def write_file(file_path: str, content: str) -> None:
+        """Write content to a file, ensuring directory exists"""
         try:
-            # Create directory if it doesn't exist
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            
-            with open(file_path, 'w', encoding=encoding) as f:
+            directory = os.path.dirname(file_path)
+            if directory:
+                os.makedirs(directory, exist_ok=True)
+            with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(content)
         except Exception as e:
             raise IOError(f"Error writing file {file_path}: {e}")
