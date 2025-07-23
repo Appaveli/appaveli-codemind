@@ -51,13 +51,13 @@ def test_cli_missing_api_key_for_analyze(runner):
         temp.write(b"public class Dummy {}")
         temp.flush()
 
-        # Clear API key completely
         env = os.environ.copy()
         env.pop("OPENAI_API_KEY", None)
 
-        result = runner.invoke(cli, ["analyze", "--file", temp.name], env=env)
+        # Important: Pass empty obj={} to initialize context
+        result = runner.invoke(cli, ["analyze", "--file", temp.name], env=env, obj={})
 
     os.unlink(temp.name)
 
-    assert result.exit_code == 1
+    assert result.exit_code == 1  # explicitly set by `ctx.exit(1)`
     assert "OpenAI API key is required" in result.output
