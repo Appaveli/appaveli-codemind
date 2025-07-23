@@ -60,4 +60,4 @@ def test_cli_missing_api_key_for_analyze(runner):
     os.unlink(temp.name)
 
     assert result.exit_code == 1
-    assert "OpenAI API key is required" in result.output
+    assert "OpenAI API key is required" in result.stderr
