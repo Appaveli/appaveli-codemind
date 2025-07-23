@@ -65,17 +65,20 @@ def cli(ctx, api_key, verbose):
 
 
 # Agent-initializing decorator for commands that require OpenAI
-import functools 
+import functools  # make sure this is imported
+
 def requires_agent(func):
     @functools.wraps(func)
     @click.pass_context
     def wrapper(ctx, *args, **kwargs):
-        from appaveli_codemind.core.agent import CodeMindAgent
-        api_key = ctx.obj.get('api_key')
+        ctx.ensure_object(dict)  # ← ensures ctx.obj is always a dict
+
+        api_key = ctx.obj.get('api_key') or os.getenv("OPENAI_API_KEY")
         if not api_key:
             console.print("[red]❌ Error: OpenAI API key is required.[/red]")
             console.print("Set the OPENAI_API_KEY environment variable or use --api-key option.")
             ctx.exit(1)
+
         ctx.obj['agent'] = CodeMindAgent(api_key=api_key)
         return ctx.invoke(func, ctx, *args, **kwargs)
     return wrapper
