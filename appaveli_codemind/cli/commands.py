@@ -80,6 +80,7 @@ def requires_agent(func):
     return wrapper
 
 @cli.command()
+@requires_agent
 @click.option('--file', '-f', help='Single file to analyze')
 @click.option('--folder', help='Analyze all supported files in this folder')
 @click.option('--output', '-o', help='Output file for raw JSON report (single file mode only)')
@@ -182,6 +183,7 @@ def analyze(ctx, file, folder, output, report, summary):
 
 
 @cli.command()
+@requires_agent
 @click.option('--file', '-f', required=True, help='File to refactor')
 @click.option('--type', '-t', 
               type=click.Choice([rt.value for rt in RefactorType]), 
@@ -254,6 +256,7 @@ def refactor(ctx, file, type, output, backup):
 
 
 @cli.command()
+@requires_agent
 @click.option('--type', '-t', required=True,
               type=click.Choice([bt.value for bt in BoilerplateType]),
               help='Type of boilerplate to generate')
@@ -335,6 +338,7 @@ def generate(ctx, type, name, package, fields, output):
 
 
 @cli.command()
+@requires_agent
 @click.option('--file', '-f', required=True, help='File to generate tests for')
 @click.option('--type', '-t', default='unit', 
               type=click.Choice(['unit', 'integration']),
@@ -382,6 +386,7 @@ def test(ctx, file, type, output):
 
 
 @cli.command()
+@requires_agent
 @click.option('--project', '-p', required=True, help='Project directory to scan')
 @click.option('--output', '-o', help='Output file for security report (JSON)')
 @click.pass_context
