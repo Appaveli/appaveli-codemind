@@ -34,18 +34,30 @@ def test_cli_no_command_prints_logo(runner):
     assert "Welcome to Appaveli CodeMind" in result.output
 
 
-import tempfile
 import os
+import tempfile
+import pytest
+from click.testing import CliRunner
+from appaveli_codemind.cli.commands import cli
+
+
+@pytest.fixture
+def runner():
+    return CliRunner()
+
 
 def test_cli_missing_api_key_for_analyze(runner):
     with tempfile.NamedTemporaryFile(suffix=".java", delete=False) as temp:
         temp.write(b"public class Dummy {}")
         temp.flush()
 
-        # No API key provided
-        result = runner.invoke(cli, ["analyze", "--file", temp.name], env={"OPENAI_API_KEY": ""})
+        # Clear API key completely
+        env = os.environ.copy()
+        env.pop("OPENAI_API_KEY", None)
 
-    os.unlink(temp.name)  # Cleanup temp file
+        result = runner.invoke(cli, ["analyze", "--file", temp.name], env=env)
 
-    assert result.exit_code != 0
+    os.unlink(temp.name)
+
+    assert result.exit_code == 1
     assert "OpenAI API key is required" in result.output
