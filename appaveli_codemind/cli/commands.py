@@ -65,8 +65,9 @@ def cli(ctx, api_key, verbose):
 
 
 # Agent-initializing decorator for commands that require OpenAI
-
+import functools 
 def requires_agent(func):
+    @functools.wraps(func)
     @click.pass_context
     def wrapper(ctx, *args, **kwargs):
         from appaveli_codemind.core.agent import CodeMindAgent
