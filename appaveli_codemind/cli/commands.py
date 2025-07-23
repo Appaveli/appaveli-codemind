@@ -50,28 +50,34 @@ def cli(ctx, api_key, verbose):
     """
     console.print(LOGO)
 
-    resolved_api_key = api_key or os.getenv("OPENAI_API_KEY")
-
     cmd = ctx.invoked_subcommand
+    ctx.ensure_object(dict)
+    ctx.obj['api_key'] = api_key or os.getenv("OPENAI_API_KEY")
+    ctx.obj['verbose'] = verbose
 
     if cmd is None:
         console.print("\n[green]Welcome to Appaveli CodeMind![/green]")
         console.print("Run [bold]appaveli-codemind --help[/bold] to see all available commands.\n")
         return
 
-    no_key_required = ["version", "info"]
-
-    if cmd not in no_key_required and not resolved_api_key:
-        console.print("[red]❌ Error: OpenAI API key is required.[/red]")
-        console.print("Set the OPENAI_API_KEY environment variable or use --api-key option.")
-        ctx.exit(1)
-
-    ctx.ensure_object(dict)
-    ctx.obj['agent'] = CodeMindAgent(api_key=resolved_api_key)
-    ctx.obj['verbose'] = verbose
-
     if verbose:
-        console.print(f"[dim]Initialized Appaveli CodeMind[/dim]")
+        console.print(f"[dim]Running command: {cmd}[/dim]")
+
+
+# Agent-initializing decorator for commands that require OpenAI
+
+def requires_agent(func):
+    @click.pass_context
+    def wrapper(ctx, *args, **kwargs):
+        from appaveli_codemind.core.agent import CodeMindAgent
+        api_key = ctx.obj.get('api_key')
+        if not api_key:
+            console.print("[red]❌ Error: OpenAI API key is required.[/red]")
+            console.print("Set the OPENAI_API_KEY environment variable or use --api-key option.")
+            ctx.exit(1)
+        ctx.obj['agent'] = CodeMindAgent(api_key=api_key)
+        return ctx.invoke(func, ctx, *args, **kwargs)
+    return wrapper
 
 @cli.command()
 @click.option('--file', '-f', help='Single file to analyze')
