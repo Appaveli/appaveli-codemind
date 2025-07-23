@@ -75,9 +75,7 @@ def requires_agent(func):
 
         api_key = ctx.obj.get('api_key') or os.getenv("OPENAI_API_KEY")
         if not api_key:
-            console.print("[red]❌ Error: OpenAI API key is required.[/red]")
-            console.print("Set the OPENAI_API_KEY environment variable or use --api-key option.")
-            ctx.exit(1)
+         raise click.ClickException("OpenAI API key is required")
 
         ctx.obj['agent'] = CodeMindAgent(api_key=api_key)
         return ctx.invoke(func, ctx, *args, **kwargs)
