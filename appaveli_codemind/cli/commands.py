@@ -47,42 +47,33 @@ LOGO = """
 def cli(ctx, api_key, verbose):
     """
     Appaveli CodeMind - Your Intelligent Code Assistant
+    
+    AI-powered code refactoring, security scanning, and generation for Java, 
+    Kotlin, Swift, C++, Dart, PHP, and JavaScript.
     """
-    console.print(LOGO)
-
-    cmd = ctx.invoked_subcommand
-    ctx.ensure_object(dict)
-    ctx.obj['api_key'] = api_key or os.getenv("OPENAI_API_KEY")
-    ctx.obj['verbose'] = verbose
-
-    if cmd is None:
+    # Display logo on first run
+    if ctx.invoked_subcommand is None:
+        console.print(LOGO)
         console.print("\n[green]Welcome to Appaveli CodeMind![/green]")
         console.print("Run [bold]appaveli-codemind --help[/bold] to see all available commands.\n")
         return
-
+    
+    # Validate API key
+    resolved_api_key = api_key or os.getenv("OPENAI_API_KEY")
+    if not resolved_api_key:
+        console.print("[red]❌ Error: OpenAI API key is required.[/red]")
+        console.print("Set the OPENAI_API_KEY environment variable or use --api-key option.")
+        ctx.exit(1)
+    
+    # Initialize context
+    ctx.ensure_object(dict)
+    ctx.obj['agent'] = CodeMindAgent(api_key=api_key)
+    ctx.obj['verbose'] = verbose
+    
     if verbose:
-        console.print(f"[dim]Running command: {cmd}[/dim]")
-
-
-# Agent-initializing decorator for commands that require OpenAI
-import functools  # make sure this is imported
-
-def requires_agent(func):
-    @functools.wraps(func)
-    @click.pass_context
-    def wrapper(ctx, *args, **kwargs):
-        ctx.ensure_object(dict)  # ← ensures ctx.obj is always a dict
-
-        api_key = ctx.obj.get('api_key') or os.getenv("OPENAI_API_KEY")
-        if not api_key:
-         raise click.ClickException("OpenAI API key is required")
-
-        ctx.obj['agent'] = CodeMindAgent(api_key=api_key)
-        return ctx.invoke(func, ctx, *args, **kwargs)
-    return wrapper
+        console.print(f"[dim]Initialized Appaveli CodeMind[/dim]")
 
 @cli.command()
-@requires_agent
 @click.option('--file', '-f', help='Single file to analyze')
 @click.option('--folder', help='Analyze all supported files in this folder')
 @click.option('--output', '-o', help='Output file for raw JSON report (single file mode only)')
@@ -185,7 +176,6 @@ def analyze(ctx, file, folder, output, report, summary):
 
 
 @cli.command()
-@requires_agent
 @click.option('--file', '-f', required=True, help='File to refactor')
 @click.option('--type', '-t', 
               type=click.Choice([rt.value for rt in RefactorType]), 
@@ -258,7 +248,6 @@ def refactor(ctx, file, type, output, backup):
 
 
 @cli.command()
-@requires_agent
 @click.option('--type', '-t', required=True,
               type=click.Choice([bt.value for bt in BoilerplateType]),
               help='Type of boilerplate to generate')
@@ -340,7 +329,6 @@ def generate(ctx, type, name, package, fields, output):
 
 
 @cli.command()
-@requires_agent
 @click.option('--file', '-f', required=True, help='File to generate tests for')
 @click.option('--type', '-t', default='unit', 
               type=click.Choice(['unit', 'integration']),
@@ -388,7 +376,6 @@ def test(ctx, file, type, output):
 
 
 @cli.command()
-@requires_agent
 @click.option('--project', '-p', required=True, help='Project directory to scan')
 @click.option('--output', '-o', help='Output file for security report (JSON)')
 @click.pass_context
