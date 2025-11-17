@@ -12,7 +12,6 @@ from appaveli_codemind.core.models import Language
 class LanguageDetector:
     """Detect programming language from file extension and content"""
     
-    # File extension to language mapping
     EXTENSIONS = {
         '.java': Language.JAVA,
         '.kt': Language.KOTLIN,
@@ -33,7 +32,6 @@ class LanguageDetector:
         '.php': Language.PHP,
     }
     
-    # Content-based detection patterns
     CONTENT_PATTERNS = {
         Language.JAVA: [
             r'package\s+[\w.]+;',
