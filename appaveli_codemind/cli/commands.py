@@ -42,7 +42,7 @@ LOGO = """
 @click.group(invoke_without_command=True)
 @click.option('--api-key', envvar='OPENAI_API_KEY', help='OpenAI API key')
 @click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
-@click.version_option(version='0.2.0', prog_name='Appaveli CodeMind')
+@click.version_option(version='1.0.0', prog_name='Appaveli CodeMind')
 @click.pass_context
 def cli(ctx, api_key, verbose):
     """
@@ -51,14 +51,13 @@ def cli(ctx, api_key, verbose):
     AI-powered code refactoring, security scanning, and generation for Java, 
     Kotlin, Swift, C++, Dart, PHP, and JavaScript.
     """
-    # Display logo on first run
     if ctx.invoked_subcommand is None:
         console.print(LOGO)
         console.print("\n[green]Welcome to Appaveli CodeMind![/green]")
         console.print("Run [bold]appaveli-codemind --help[/bold] to see all available commands.\n")
         return
     
-    # Validate API key
+  
     resolved_api_key = api_key or os.getenv("OPENAI_API_KEY")
     if not resolved_api_key:
         console.print("[red]❌ Error: OpenAI API key is required.[/red]")
@@ -132,7 +131,6 @@ def analyze(ctx, file, folder, output, report, summary):
 
         console.print(f"\n[bold green]📊 Analysis Results for {target_file.name}[/bold green]")
 
-        # Export formatted report
         if report:
             from appaveli_codemind.reports.exporter import ReportExporter
 
@@ -147,7 +145,7 @@ def analyze(ctx, file, folder, output, report, summary):
             console.print(f"\n[blue]📝 {report.title()} report saved to {report_file}[/blue]")
         if result.summary:
          console.print(Panel(result.summary, title="📘 Code Summary", border_style="magenta"))
-        # Show security issues
+
         if result.security_issues:
             console.print(f"\n[red]🚨 Security Issues Found ({len(result.security_issues)}):[/red]")
             for i, issue in enumerate(result.security_issues, 1):
@@ -161,7 +159,6 @@ def analyze(ctx, file, folder, output, report, summary):
         else:
             console.print("[green]✅ No security issues found[/green]")
 
-        # Save raw JSON report only in single file mode
         if output and file:
             from dataclasses import asdict
             import json
@@ -194,7 +191,6 @@ def refactor(ctx, file, type, output, backup):
     agent = ctx.obj['agent']
     refactor_type = RefactorType(type)
     
-    # Create backup if requested
     if backup:
         from appaveli_codemind.utils.file_utils import FileUtils
         backup_path = FileUtils.backup_file(file)
@@ -217,7 +213,6 @@ def refactor(ctx, file, type, output, backup):
         console.print(f"[red]❌ Refactoring failed: {result.error_message}[/red]")
         ctx.exit(1)
     
-    # Display results
     console.print(f"[green]✅ Refactoring complete![/green]")
     
     info_table = Table(show_header=False, box=None)
@@ -262,7 +257,6 @@ def generate(ctx, type, name, package, fields, output):
     agent = ctx.obj['agent']
     template_type = BoilerplateType(type)
     
-    # Parse fields if provided
     parsed_fields = {}
     if fields:
         for field in fields.split(','):
@@ -292,10 +286,8 @@ def generate(ctx, type, name, package, fields, output):
         console.print(f"[red]❌ Generation failed: {result.error_message}[/red]")
         ctx.exit(1)
     
-    # Display results
     console.print(f"[green]✅ Generated {type}: {name}[/green]")
     
-    # Display generated code
     syntax = Syntax(
         result.generated_code,
         result.language.value,
@@ -361,13 +353,11 @@ def test(ctx, file, type, output):
         console.print("[red]❌ No tests were generated[/red]")
         ctx.exit(1)
     
-    # Detect language for syntax highlighting
     language = agent.language_detector.detect(file)
     lang_str = language.value if language else "text"
     
     console.print(f"[green]✅ Generated {type} tests for {file}[/green]")
     
-    # Display generated tests
     syntax = Syntax(test_code, lang_str, theme="monokai", line_numbers=True)
     console.print(Panel(syntax, title=f"Generated {type.title()} Tests"))
     
@@ -401,7 +391,6 @@ def security(ctx, project, output):
             console.print(f"[red]❌ Security scan failed: {e}[/red]")
             ctx.exit(1)
     
-    # Display security summary
     console.print(f"\n[bold red]🔒 Security Scan Results for {project}[/bold red]")
     
     summary_table = Table(title="Security Summary")
@@ -417,7 +406,6 @@ def security(ctx, project, output):
     
     console.print(summary_table)
     
-    # Show detailed issues
     if result.code_issues:
         console.print(f"\n[red]🚨 Code Security Issues:[/red]")
         
@@ -429,7 +417,6 @@ def security(ctx, project, output):
         if len(result.code_issues) > 10:
             console.print(f"     ... and {len(result.code_issues) - 10} more issues")
     
-    # Save report if requested
     if output:
         import json
         from dataclasses import asdict
@@ -461,7 +448,6 @@ def info():
     
     console.print("[bold blue]📋 Appaveli CodeMind System Information[/bold blue]\n")
     
-    # Supported languages
     languages_table = Table(title="Supported Languages")
     languages_table.add_column("Language", style="cyan")
     languages_table.add_column("Extensions", style="magenta")
