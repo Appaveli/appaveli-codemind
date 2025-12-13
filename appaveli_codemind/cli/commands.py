@@ -40,15 +40,23 @@ LOGO = """
 
 
 @click.group(invoke_without_command=True)
-@click.option('--api-key', envvar='OPENAI_API_KEY', help='OpenAI API key')
+@click.option(
+    '--llm',
+    type=click.Choice(['openai', 'anthropic'], case_sensitive=False),
+    envvar='LLM_PROVIDER',
+    default='openai',
+    show_default=True,
+    help='LLM provider to use (openai or anthropic)'
+)
+@click.option('--api-key', help='API key for the selected provider (overrides env var)')
 @click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
 @click.version_option(version='1.0.0', prog_name='Appaveli CodeMind')
 @click.pass_context
-def cli(ctx, api_key, verbose):
+def cli(ctx, llm, api_key, verbose):
     """
     Appaveli CodeMind - Your Intelligent Code Assistant
-    
-    AI-powered code refactoring, security scanning, and generation for Java, 
+
+    AI-powered code refactoring, security scanning, and generation for Java,
     Kotlin, Swift, C++, Dart, PHP, and JavaScript.
     """
     if ctx.invoked_subcommand is None:
@@ -56,22 +64,26 @@ def cli(ctx, api_key, verbose):
         console.print("\n[green]Welcome to Appaveli CodeMind![/green]")
         console.print("Run [bold]appaveli-codemind --help[/bold] to see all available commands.\n")
         return
+
     
+    llm = (llm or "openai").lower().strip()
+
   
-    resolved_api_key = api_key or os.getenv("OPENAI_API_KEY")
+    env_key_name = "ANTHROPIC_API_KEY" if llm == "anthropic" else "OPENAI_API_KEY"
+    resolved_api_key = api_key or os.getenv(env_key_name)
+
     if not resolved_api_key:
-        console.print("[red]❌ Error: OpenAI API key is required.[/red]")
-        console.print("Set the OPENAI_API_KEY environment variable or use --api-key option.")
+        console.print(f"[red]❌ Error: {llm.title()} API key is required.[/red]")
+        console.print(f"Set the {env_key_name} environment variable or use --api-key option.")
         ctx.exit(1)
-    
+
     # Initialize context
     ctx.ensure_object(dict)
-    ctx.obj['agent'] = CodeMindAgent(api_key=api_key)
+    ctx.obj['agent'] = CodeMindAgent(api_key=resolved_api_key, llm_provider=llm)
     ctx.obj['verbose'] = verbose
-    
-    if verbose:
-        console.print(f"[dim]Initialized Appaveli CodeMind[/dim]")
 
+    if verbose:
+        console.print(f"[dim]Initialized Appaveli CodeMind (provider={llm})[/dim]")
 @cli.command()
 @click.option('--file', '-f', help='Single file to analyze')
 @click.option('--folder', help='Analyze all supported files in this folder')

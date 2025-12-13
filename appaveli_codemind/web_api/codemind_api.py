@@ -21,19 +21,15 @@ app = FastAPI(
     description="Web API for Appaveli CodeMind – analysis, refactoring, security.",
 )
 
-# CORS for local dev & static HTML
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten later if needed
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 agent = CodeMindAgent()
-
-
-# ---------- Shared Models ----------
 
 class SecurityIssueOut(BaseModel):
     type: str
@@ -72,14 +68,10 @@ class SecurityScanResponse(BaseModel):
     issues: List[SecurityIssueOut]
 
 
-# ---------- Health ----------
-
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "appaveli-codemind", "version": "1.0.0"}
 
-
-# ---------- Analyze (single file upload) ----------
 
 @app.post("/analyze/upload", response_model=AnalysisResponse)
 async def analyze_upload(
@@ -131,8 +123,6 @@ async def analyze_upload(
             pass
 
 
-# ---------- Refactor (single file upload) ----------
-
 @app.post("/refactor/upload", response_model=RefactorResponse)
 async def refactor_upload(
     file: UploadFile = File(...),
@@ -175,8 +165,6 @@ async def refactor_upload(
         refactored_code=result.refactored_code,
     )
 
-
-# ---------- Security Scan (file or project ZIP) ----------
 
 @app.post("/security/upload", response_model=SecurityScanResponse)
 async def security_upload(
