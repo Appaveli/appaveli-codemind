@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "appaveli-codemind"
-version = "1.0.0"
+version = "1.1.0"
 description = "AI-powered code refactoring, security scanning, and generation"
 readme = "README.md"
 authors = [
@@ -38,7 +38,8 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "pydantic",
-    "python-multipart>=0.0.9"
+    "python-multipart>=0.0.9",
+    "anthropic>=0.75.0"
 ]
 
 [project.optional-dependencies]

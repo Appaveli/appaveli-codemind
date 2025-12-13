@@ -14,7 +14,7 @@ from appaveli_codemind.core.models import (
     CodeSuggestion, SecuritySeverity
 )
 from appaveli_codemind.core.language_detector import LanguageDetector
-from appaveli_codemind.ai.llm_client import OpenAIClient
+from appaveli_codemind.ai.llm_client import get_llm_client
 from appaveli_codemind.utils.file_utils import FileUtils
 from appaveli_codemind.utils.logging_config import setup_logging
 
@@ -24,27 +24,26 @@ class CodeMindAgent:
     Main Appaveli CodeMind agent that orchestrates all functionality
     """
     
-    def __init__(self, api_key: Optional[str] = None, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, api_key: Optional[str] = None, llm_provider: str = "openai",
+             config: Optional[Dict[str, Any]] = None):
         """
         Initialize the CodeMind agent
-        
+
         Args:
-            api_key: OpenAI API key (if not provided, will look for env var)
+            api_key: API key for the selected LLM provider (or env var)
+            llm_provider: 'openai' or 'anthropic'
             config: Optional configuration dictionary
         """
-        # Setup logging
         setup_logging()
         self.logger = logging.getLogger(__name__)
-        
-        # Initialize configuration
+
         self.config = config or {}
-        
-        # Initialize OpenAI client
-        self.openai_client = OpenAIClient(api_key)
-        
-        # Initialize components
+
+        self.llm_client = get_llm_client(provider=llm_provider, api_key=api_key)
+        self.logger.info(f"Using LLM client: {type(self.llm_client).__name__} (provider={llm_provider})")
+
         self.language_detector = LanguageDetector()
-        
+
         self.logger.info("Appaveli CodeMind agent initialized successfully")
     
     def analyze_file(self, file_path: str) -> AnalysisResult:
@@ -133,7 +132,7 @@ class CodeMindAgent:
             suggestions=[],
             changes_made=["Code refactored using AI analysis"],
             tokens_used=len(original_code.split()) + len(refactored_code.split()),
-            cost_estimate=self.openai_client.estimate_cost(len(original_code.split()) + len(refactored_code.split()))
+            cost_estimate=self.llm_client.estimate_cost(len(original_code.split()) + len(refactored_code.split()))
         )
         
         # Save refactored code if output path provided
@@ -178,7 +177,7 @@ class CodeMindAgent:
             name=name,
             metadata=kwargs,
             tokens_used=len(generated_code.split()),
-            cost_estimate=self.openai_client.estimate_cost(len(generated_code.split()))
+            cost_estimate=self.llm_client.estimate_cost(len(generated_code.split()))
         )
         
         # Save generated code if output path provided
@@ -287,7 +286,7 @@ class CodeMindAgent:
         """
         
         try:
-            response = self.openai_client.chat_completion([
+            response = self.llm_client.chat_completion([
                 {"role": "system", "content": "You are a security expert. Return only valid JSON."},
                 {"role": "user", "content": prompt}
             ])
@@ -335,7 +334,7 @@ class CodeMindAgent:
         """
         
         try:
-            response = self.openai_client.chat_completion([
+            response = self.llm_client.chat_completion([
                 {"role": "system", "content": f"You are an expert {language.value} developer. Return only clean, refactored code."},
                 {"role": "user", "content": prompt}
             ])
@@ -433,7 +432,7 @@ class CodeMindAgent:
         prompt = template_prompts.get(template_type, f"Create a {template_type.value} template named {name}")
         
         try:
-            response = self.openai_client.chat_completion([
+            response = self.llm_client.chat_completion([
                 {"role": "system", "content": "You are an expert software developer. Generate clean, production-ready code."},
                 {"role": "user", "content": prompt}
             ])
@@ -474,7 +473,7 @@ class CodeMindAgent:
         """
         
         try:
-            response = self.openai_client.chat_completion([
+            response = self.llm_client.chat_completion([
                 {"role": "system", "content": f"You are an expert in {language.value} testing and {framework}."},
                 {"role": "user", "content": prompt}
             ])
@@ -545,7 +544,7 @@ class CodeMindAgent:
         """
 
         try:
-            response = self.openai_client.chat_completion([
+            response = self.llm_client.chat_completion([
                 {"role": "system", "content": "You are a senior software engineer who writes clear and concise code summaries."},
                 {"role": "user", "content": prompt}
             ])
