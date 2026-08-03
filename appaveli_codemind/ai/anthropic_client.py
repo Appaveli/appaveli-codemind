@@ -1,6 +1,6 @@
-import os
 import logging
-from typing import Dict, List, Optional, Any
+import os
+from typing import Any, Dict, List, Optional
 
 from anthropic import Anthropic
 
@@ -27,7 +27,7 @@ class AnthropicClient:
         model: Optional[str] = None,
         temperature: float = 0.1,
         max_tokens: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Create a Claude message. Keeps the same output shape as OpenAIClient.chat_completion().
@@ -43,7 +43,7 @@ class AnthropicClient:
 
                 if role == "system":
                     if content:
-                        system_text += (content if not system_text else "\n" + content)
+                        system_text += content if not system_text else "\n" + content
                     continue
 
                 if role in ("user", "assistant"):
@@ -55,7 +55,7 @@ class AnthropicClient:
                 temperature=temperature,
                 system=system_text or None,
                 messages=filtered_messages,
-                **kwargs
+                **kwargs,
             )
 
             # Claude returns content blocks; gather text blocks into one string

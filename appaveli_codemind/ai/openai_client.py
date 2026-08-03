@@ -2,9 +2,9 @@
 OpenAI client wrapper for Appaveli CodeMind
 """
 
-import os
 import logging
-from typing import Dict, List, Optional, Any
+import os
+from typing import Any, Dict, List, Optional
 
 from openai import OpenAI
 
@@ -37,7 +37,7 @@ class OpenAIClient:
         model: Optional[str] = None,
         temperature: float = 0.1,
         max_tokens: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Create a chat completion
@@ -58,13 +58,17 @@ class OpenAIClient:
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens or self.max_tokens,
-                **kwargs
+                **kwargs,
             )
 
             usage = {}
             if getattr(response, "usage", None):
                 # openai SDK usage is a Pydantic-ish object in many versions
-                usage = response.usage.model_dump() if hasattr(response.usage, "model_dump") else dict(response.usage)
+                usage = (
+                    response.usage.model_dump()
+                    if hasattr(response.usage, "model_dump")
+                    else dict(response.usage)
+                )
 
             return {
                 "content": response.choices[0].message.content,

@@ -1,5 +1,7 @@
-from appaveli_codemind.core.models import AnalysisResult
 from pathlib import Path
+
+from appaveli_codemind.core.models import AnalysisResult
+
 
 class MarkdownReportExporter:
     @staticmethod
@@ -11,7 +13,7 @@ class MarkdownReportExporter:
             f"- **Language:** {result.language.value.title()}",
             f"- **Lines of Code:** {result.line_count}",
             f"- **Timestamp:** {result.analysis_timestamp.strftime('%Y-%m-%d %H:%M:%S')}",
-            ""
+            "",
         ]
         # Optional code summary
         if result.summary:
@@ -22,13 +24,15 @@ class MarkdownReportExporter:
         if result.security_issues:
             lines.append("## 🚨 Security Issues")
             for i, issue in enumerate(result.security_issues, 1):
-                lines.extend([
-                    f"### {i}. {issue.type.title()} (Line {issue.line})",
-                    f"- **Severity:** `{issue.severity.value.upper()}`",
-                    f"- **Description:** {issue.description}",
-                    f"- **Fix Suggestion:** {issue.fix_suggestion}",
-                    ""
-                ])
+                lines.extend(
+                    [
+                        f"### {i}. {issue.type.title()} (Line {issue.line})",
+                        f"- **Severity:** `{issue.severity.value.upper()}`",
+                        f"- **Description:** {issue.description}",
+                        f"- **Fix Suggestion:** {issue.fix_suggestion}",
+                        "",
+                    ]
+                )
         else:
             lines.append("✅ No security issues found.")
 

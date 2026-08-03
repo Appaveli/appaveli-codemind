@@ -10,16 +10,17 @@ from pathlib import Path
 root_path = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(root_path))
 
-from appaveli_codemind.bootstrap import *
 
 # Add current directory to Python path
 current_dir = Path(__file__).parent
 sys.path.insert(0, str(current_dir))
 
+
 def main():
     """Main entry point for Appaveli CodeMind"""
     try:
         from appaveli_codemind.cli.commands import cli
+
         cli()
     except KeyboardInterrupt:
         print("\n\n👋 Goodbye from Appaveli CodeMind!")
