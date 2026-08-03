@@ -192,3 +192,42 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# CodeMind specific
+*.backup
+.appaveli_cache/
+
+# Planning and internal documentation (not for public repo)
+CodeMind_Engineering_Review.docx
+CodeMind_Launch_Guide.docx
+JIRA_IMPORT_GUIDE.md
+OPEN_SOURCE_STRATEGY.md
+SESSION_SUMMARY.md
+LAUNCH_GUIDE.md
+jira_api_import.py
+jira_tickets_import.csv
+jira_tickets_open_source.csv
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation build
+docs/_build/
+site/
+
+# Test reports
+test-results/
+.pytest_cache/
+
+# Temporary files
+*.tmp
+tmp/

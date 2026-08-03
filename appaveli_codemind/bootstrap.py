@@ -1,5 +1,5 @@
-import os
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Load .env from project root regardless of where the script runs

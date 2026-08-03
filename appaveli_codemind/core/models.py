@@ -3,13 +3,14 @@ Core data models and enums for Appaveli CodeMind
 """
 
 from dataclasses import dataclass
-from enum import Enum
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class Language(Enum):
     """Supported programming languages"""
+
     JAVA = "java"
     KOTLIN = "kotlin"
     SWIFT = "swift"
@@ -22,6 +23,7 @@ class Language(Enum):
 
 class BoilerplateType(Enum):
     """Types of boilerplate code that can be generated"""
+
     # Java/Kotlin
     POJO = "pojo"
     REST_API_JERSEY = "rest_api_jersey"
@@ -30,31 +32,31 @@ class BoilerplateType(Enum):
     JUNIT_TEST = "junit_test"
     SPRING_CONTROLLER = "spring_controller"
     SPRING_SERVICE = "spring_service"
-    
+
     # Swift/iOS
     SWIFTUI_VIEW = "swiftui_view"
     SWIFTUI_VIEWMODEL = "swiftui_viewmodel"
     XCTEST_UNIT = "xctest_unit"
     IOS_MODEL = "ios_model"
-    
+
     # Android/Kotlin
     COMPOSE_SCREEN = "compose_screen"
     COMPOSE_COMPONENT = "compose_component"
     ANDROID_VIEWMODEL = "android_viewmodel"
     ANDROID_REPOSITORY = "android_repository"
-    
+
     # Flutter/Dart
     FLUTTER_WIDGET = "flutter_widget"
     FLUTTER_SCREEN = "flutter_screen"
     FLUTTER_SERVICE = "flutter_service"
     FLUTTER_MODEL = "flutter_model"
-    
+
     # JavaScript/TypeScript
     REACT_COMPONENT = "react_component"
     NODE_SERVICE = "node_service"
     EXPRESS_ROUTE = "express_route"
-    
-    #PHP
+
+    # PHP
     LARAVEL_CONTROLLER = "laravel_controller"
     LARAVEL_MODEL = "laravel_model"
     LARAVEL_MIGRATION = "laravel_migration"
@@ -62,7 +64,7 @@ class BoilerplateType(Enum):
     LARAVEL_REQUEST = "laravel_request"
     LARAVEL_RESOURCE = "laravel_resource"
     LARAVEL_ROUTE = "laravel_route"
-    
+
     # Cross-platform
     API_CLIENT = "api_client"
     DATA_MODEL = "data_model"
@@ -70,6 +72,7 @@ class BoilerplateType(Enum):
 
 class SecuritySeverity(Enum):
     """Security issue severity levels"""
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -79,6 +82,7 @@ class SecuritySeverity(Enum):
 
 class RefactorType(Enum):
     """Types of code refactoring"""
+
     EXTRACT_METHOD = "extract_method"
     EXTRACT_CLASS = "extract_class"
     RENAME_VARIABLE = "rename_variable"
@@ -94,6 +98,7 @@ class RefactorType(Enum):
 @dataclass
 class SecurityIssue:
     """Represents a security vulnerability found in code"""
+
     type: str
     severity: SecuritySeverity
     line: int
@@ -108,6 +113,7 @@ class SecurityIssue:
 @dataclass
 class DependencyVulnerability:
     """Represents a vulnerability in project dependencies"""
+
     package: str
     current_version: str
     vulnerable_version: str
@@ -121,6 +127,7 @@ class DependencyVulnerability:
 @dataclass
 class CodeSuggestion:
     """Represents a code improvement suggestion"""
+
     type: str
     description: str
     line: Optional[int]
@@ -132,6 +139,7 @@ class CodeSuggestion:
 @dataclass
 class RefactorResult:
     """Result of a code refactoring operation"""
+
     success: bool
     original_code: str
     refactored_code: str
@@ -147,6 +155,7 @@ class RefactorResult:
 @dataclass
 class GenerationResult:
     """Result of a code generation operation"""
+
     success: bool
     generated_code: str
     template_type: BoilerplateType
@@ -161,6 +170,7 @@ class GenerationResult:
 @dataclass
 class SecurityScanResult:
     """Result of a security scan operation"""
+
     file_path: str
     language: Language
     code_issues: List[SecurityIssue]
@@ -173,6 +183,7 @@ class SecurityScanResult:
 @dataclass
 class AnalysisResult:
     """Comprehensive code analysis result"""
+
     file_path: str
     language: Language
     line_count: int

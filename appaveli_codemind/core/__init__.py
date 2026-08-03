@@ -1,3 +1,3 @@
 """
-Core functionality module for Appaveli CodeMind  
+Core functionality module for Appaveli CodeMind
 """

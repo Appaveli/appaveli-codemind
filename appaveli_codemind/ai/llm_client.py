@@ -5,9 +5,8 @@ LLM client factory for Appaveli CodeMind
 import os
 from typing import Optional, Union
 
-from appaveli_codemind.ai.openai_client import OpenAIClient
 from appaveli_codemind.ai.anthropic_client import AnthropicClient
-
+from appaveli_codemind.ai.openai_client import OpenAIClient
 
 LLMClient = Union[OpenAIClient, AnthropicClient]
 

@@ -1,6 +1,9 @@
-from appaveli_codemind.core.models import AnalysisResult
-from jinja2 import Template
 from pathlib import Path
+
+from jinja2 import Template
+
+from appaveli_codemind.core.models import AnalysisResult
+
 
 class HtmlReportExporter:
     @staticmethod
@@ -15,7 +18,7 @@ class HtmlReportExporter:
             line_count=result.line_count,
             timestamp=result.analysis_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
             summary=result.summary,
-            issues=result.security_issues
+            issues=result.security_issues,
         )
 
-        return rendered 
+        return rendered
