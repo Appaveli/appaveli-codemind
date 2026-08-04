@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from fastapi.testclient import TestClient
 
 from appaveli_codemind.web_api.auth import get_api_key_manager
-from appaveli_codemind.web_api.codemind_api import app
+from appaveli_codemind.web_api.codemind_api import app, ADMIN_KEY
 
 # Load environment variables for testing
 load_dotenv()
@@ -181,7 +181,7 @@ class TestAPIAuthentication(unittest.TestCase):
 
     def test_create_api_key_valid_admin_key(self):
         """Test creating API key with valid admin key"""
-        headers = {"X-Admin-Key": os.getenv("CODEMIND_ADMIN_KEY")}
+        headers = {"X-Admin-Key": ADMIN_KEY}
         response = self.client.post(
             "/api-keys/create",
             json={"name": "Integration Test Key", "rate_limit": 50},
@@ -205,7 +205,7 @@ class TestAPIAuthentication(unittest.TestCase):
 
     def test_list_api_keys_with_admin_key(self):
         """Test listing API keys with valid admin key"""
-        headers = {"X-Admin-Key": os.getenv("CODEMIND_ADMIN_KEY")}
+        headers = {"X-Admin-Key": ADMIN_KEY}
         response = self.client.get("/api-keys/list", headers=headers)
 
         self.assertEqual(response.status_code, 200)

@@ -24,11 +24,16 @@ from appaveli_codemind.web_api.middleware import APIKeyMiddleware
 load_dotenv()
 
 # Get admin key from environment
-ADMIN_KEY = os.getenv("CODEMIND_ADMIN_KEY")
-if not ADMIN_KEY:
-    raise ValueError(
-        "CODEMIND_ADMIN_KEY environment variable not set. "
-        "Please set it in your .env file for security."
+# For testing/CI, use a default key. For production, MUST set CODEMIND_ADMIN_KEY
+DEFAULT_TEST_ADMIN_KEY = "test_admin_key_insecure_do_not_use_in_production"
+ADMIN_KEY = os.getenv("CODEMIND_ADMIN_KEY") or DEFAULT_TEST_ADMIN_KEY
+
+# Warn if using default key (not in production)
+if ADMIN_KEY == DEFAULT_TEST_ADMIN_KEY:
+    import warnings
+    warnings.warn(
+        "Using default admin key! Set CODEMIND_ADMIN_KEY environment variable for production.",
+        stacklevel=2
     )
 
 app = FastAPI(
