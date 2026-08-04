@@ -5,7 +5,8 @@ import zipfile
 from tempfile import NamedTemporaryFile
 from typing import Dict, List, Optional
 
-from fastapi import FastAPI, File, Form, UploadFile
+from dotenv import load_dotenv
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -15,18 +16,49 @@ from appaveli_codemind.core.models import (
     RefactorType,
     SecuritySeverity,
 )
+from appaveli_codemind.web_api.auth import get_api_key_manager
+from appaveli_codemind.web_api.middleware import APIKeyMiddleware
+
+# Load environment variables
+load_dotenv()
+
+# Get admin key from environment
+ADMIN_KEY = os.getenv("CODEMIND_ADMIN_KEY")
+if not ADMIN_KEY:
+    raise ValueError(
+        "CODEMIND_ADMIN_KEY environment variable not set. "
+        "Please set it in your .env file for security."
+    )
 
 app = FastAPI(
     title="Appaveli CodeMind API",
-    version="1.0.0",
-    description="Web API for Appaveli CodeMind – analysis, refactoring, security.",
+    version="1.2.0",
+    description=(
+        "Web API for Appaveli CodeMind – analysis, refactoring, security.\n\n"
+        "## Authentication\n"
+        "All endpoints (except /health) require API key authentication.\n"
+        "Include your API key in the `X-API-Key` header.\n\n"
+        "Example:\n"
+        "```\n"
+        "curl -H 'X-API-Key: your_api_key_here' https://api.example.com/analyze/upload\n"
+        "```\n"
+    ),
 )
 
+# Add API key authentication middleware
+app.add_middleware(APIKeyMiddleware)
+
+# Restrict CORS to specific origins (update with your actual domains)
+# For development, you can use localhost. For production, use your actual domain.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "https://codemind.appaveli.com",  # Update with your actual domain
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -70,9 +102,85 @@ class SecurityScanResponse(BaseModel):
     issues: List[SecurityIssueOut]
 
 
+class APIKeyCreateRequest(BaseModel):
+    name: str
+    rate_limit: int = 100
+
+
+class APIKeyCreateResponse(BaseModel):
+    api_key: str
+    key_id: str
+    name: str
+    rate_limit: int
+    message: str
+
+
+class APIKeyListResponse(BaseModel):
+    keys: List[Dict]
+
+
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "appaveli-codemind", "version": "1.0.0"}
+    """Health check endpoint - no authentication required."""
+    return {"status": "ok", "service": "appaveli-codemind", "version": "1.2.0"}
+
+
+@app.post("/api-keys/create", response_model=APIKeyCreateResponse)
+def create_api_key(
+    request: APIKeyCreateRequest,
+    x_admin_key: str = Header(..., alias="X-Admin-Key"),
+):
+    """
+    Create a new API key (admin only).
+
+    Requires X-Admin-Key header with admin credentials.
+    The generated API key is only shown once - store it securely.
+    """
+    if x_admin_key != ADMIN_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid admin key",
+        )
+
+    manager = get_api_key_manager()
+    api_key = manager.generate_api_key(
+        name=request.name,
+        rate_limit=request.rate_limit,
+    )
+
+    # Extract key_id from the generated key for response
+    import hashlib
+    key_id = hashlib.sha256(api_key.encode()).hexdigest()[:16]
+
+    return APIKeyCreateResponse(
+        api_key=api_key,
+        key_id=key_id,
+        name=request.name,
+        rate_limit=request.rate_limit,
+        message="API key created successfully. Store it securely - it won't be shown again.",
+    )
+
+
+@app.get("/api-keys/list", response_model=APIKeyListResponse)
+def list_api_keys(
+    x_admin_key: str = Header(..., alias="X-Admin-Key"),
+):
+    """
+    List all API keys (admin only).
+
+    Requires X-Admin-Key header with admin credentials.
+    Does not return the actual API keys, only metadata.
+    """
+    if x_admin_key != ADMIN_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid admin key",
+        )
+
+    manager = get_api_key_manager()
+    keys = manager.list_keys()
+
+    return APIKeyListResponse(keys=keys)
 
 
 @app.post("/analyze/upload", response_model=AnalysisResponse)
