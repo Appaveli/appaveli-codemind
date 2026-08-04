@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile, status
+
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -57,6 +58,7 @@ app.add_middleware(
         "http://localhost:8000",
         "https://codemind.appaveli.com",  # Update with your actual domain
     ],
+
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
