@@ -69,7 +69,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-agent = CodeMindAgent()
+# Lazy agent initialization (only create when needed, not at import time)
+# This allows tests to run without requiring API keys
+_agent: Optional[CodeMindAgent] = None
+
+
+def get_agent() -> CodeMindAgent:
+    """Get or create the CodeMind agent instance"""
+    global _agent
+    if _agent is None:
+        _agent = CodeMindAgent()
+    return _agent
 
 
 class SecurityIssueOut(BaseModel):
@@ -205,7 +215,7 @@ async def analyze_upload(
         shutil.copyfileobj(file.file, tmp)
 
     try:
-        result: AnalysisResult = agent.analyze_file(tmp_path)
+        result: AnalysisResult = get_agent().analyze_file(tmp_path)
 
         issues_out: List[SecurityIssueOut] = []
         for issue in result.security_issues:
@@ -261,7 +271,7 @@ async def refactor_upload(
         rt_enum = RefactorType.GENERAL_CLEANUP
 
     try:
-        result = agent.refactor_file(tmp_path, rt_enum)
+        result = get_agent().refactor_file(tmp_path, rt_enum)
     finally:
         # we may still want to keep the temp file around if we later diff; for now, clean
         try:
@@ -319,7 +329,7 @@ async def security_upload(
             project_root = extract_dir
 
         # Run CodeMind's project security scan
-        scan_result = agent.scan_project_security(project_root)
+        scan_result = get_agent().scan_project_security(project_root)
 
         issues_out: List[SecurityIssueOut] = []
         for issue in scan_result.code_issues:
