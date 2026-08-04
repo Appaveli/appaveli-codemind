@@ -232,6 +232,68 @@ class TestAPIAuthentication(unittest.TestCase):
         # CORS headers should be present
         self.assertIn("access-control-allow-origin", response.headers)
 
+    def test_cors_allowed_origin(self):
+        """Test that allowed origins are accepted"""
+        # localhost:3000 should be in the default allowed origins
+        headers = {"Origin": "http://localhost:3000"}
+
+        response = self.client.get("/health", headers=headers)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("access-control-allow-origin", response.headers)
+        self.assertEqual(
+            response.headers["access-control-allow-origin"],
+            "http://localhost:3000"
+        )
+
+    def test_cors_disallowed_origin(self):
+        """Test that disallowed origins are rejected"""
+        # This origin should NOT be in the allowed list
+        headers = {"Origin": "https://evil-site.com"}
+
+        response = self.client.get("/health", headers=headers)
+
+        # Request should succeed (health endpoint is public)
+        # But CORS headers should not include the disallowed origin
+        self.assertEqual(response.status_code, 200)
+
+        # The disallowed origin should not be reflected in the response
+        if "access-control-allow-origin" in response.headers:
+            self.assertNotEqual(
+                response.headers["access-control-allow-origin"],
+                "https://evil-site.com"
+            )
+
+    def test_cors_credentials_allowed(self):
+        """Test that credentials are allowed in CORS"""
+        headers = {"Origin": "http://localhost:3000"}
+
+        response = self.client.get("/health", headers=headers)
+
+        self.assertIn("access-control-allow-credentials", response.headers)
+        self.assertEqual(
+            response.headers["access-control-allow-credentials"],
+            "true"
+        )
+
+    def test_cors_preflight_request(self):
+        """Test CORS preflight (OPTIONS) request"""
+        headers = {
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "X-API-Key",
+        }
+
+        response = self.client.options("/analyze/upload", headers=headers)
+
+        # Preflight should succeed
+        self.assertEqual(response.status_code, 200)
+
+        # Check CORS headers
+        self.assertIn("access-control-allow-origin", response.headers)
+        self.assertIn("access-control-allow-methods", response.headers)
+        self.assertIn("access-control-allow-headers", response.headers)
+
 
 if __name__ == "__main__":
     unittest.main()
