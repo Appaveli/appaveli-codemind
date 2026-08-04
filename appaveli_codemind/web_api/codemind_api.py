@@ -36,6 +36,13 @@ if ADMIN_KEY == DEFAULT_TEST_ADMIN_KEY:
         stacklevel=2
     )
 
+# Get allowed CORS origins from environment
+# Default to localhost for development
+DEFAULT_ORIGINS = "http://localhost:3000,http://localhost:8000"
+allowed_origins = os.getenv("ALLOWED_ORIGINS", DEFAULT_ORIGINS).split(",")
+# Strip whitespace from each origin
+allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
+
 app = FastAPI(
     title="Appaveli CodeMind API",
     version="1.2.0",
@@ -54,16 +61,11 @@ app = FastAPI(
 # Add API key authentication middleware
 app.add_middleware(APIKeyMiddleware)
 
-# Restrict CORS to specific origins (update with your actual domains)
-# For development, you can use localhost. For production, use your actual domain.
+# CORS configuration - origins are loaded from ALLOWED_ORIGINS env variable
+# Defaults to localhost for development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:8000",
-        "https://codemind.appaveli.com",  # Update with your actual domain
-    ],
-
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
