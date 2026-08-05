@@ -21,13 +21,21 @@ from appaveli_codemind.core.models import (
     SecurityScanResult,
     SecuritySeverity,
 )
+from appaveli_codemind.services.appaveli_analysis_service import AppaveliAnalysisService
+from appaveli_codemind.services.appaveli_code_transform import AppaveliCodeTransform
+from appaveli_codemind.services.appaveli_security_service import AppaveliSecurityService
 from appaveli_codemind.utils.file_utils import FileUtils
 from appaveli_codemind.utils.logging_config import setup_logging
 
 
 class CodeMindAgent:
     """
-    Main Appaveli CodeMind agent that orchestrates all functionality
+    Main Appaveli CodeMind agent that orchestrates all functionality.
+
+    This agent acts as a coordinator, delegating work to specialized services:
+    - SecurityService: Security scanning
+    - AnalysisService: Code analysis
+    - RefactorService: Code refactoring
     """
 
     def __init__(
@@ -56,11 +64,20 @@ class CodeMindAgent:
 
         self.language_detector = LanguageDetector()
 
+        # Initialize Appaveli services
+        self.security_service = AppaveliSecurityService(self.llm_client, self.language_detector)
+        self.code_transform = AppaveliCodeTransform(self.llm_client, self.language_detector)
+        self.analysis_service = AppaveliAnalysisService(
+            self.llm_client, self.language_detector, self.security_service
+        )
+
         self.logger.info("Appaveli CodeMind agent initialized successfully")
 
     def analyze_file(self, file_path: str) -> AnalysisResult:
         """
-        Perform comprehensive analysis of a code file
+        Perform comprehensive analysis of a code file.
+
+        Delegates to AnalysisService.
 
         Args:
             file_path: Path to the file to analyze
@@ -68,47 +85,15 @@ class CodeMindAgent:
         Returns:
             AnalysisResult with comprehensive analysis
         """
-        self.logger.info(f"Analyzing file: {file_path}")
-
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"File not found: {file_path}")
-
-        # Read file content
-        content = FileUtils.read_file(file_path)
-
-        # Detect language
-        language = self.language_detector.detect(file_path)
-        if not language:
-            raise ValueError(f"Unsupported file type: {file_path}")
-
-        # Perform basic analysis
-        security_issues = self._scan_code_security(content, language)
-        code_suggestions = self._get_code_suggestions(content, language)
-
-        # Generate high-level summary
-        summary = self._summarize_code(content, language)
-
-        # Calculate metrics
-        line_count = len(content.split("\n"))
-
-        return AnalysisResult(
-            file_path=file_path,
-            language=language,
-            line_count=line_count,
-            security_issues=security_issues,
-            code_suggestions=code_suggestions,
-            complexity_score=None,
-            maintainability_score=None,
-            test_coverage_estimate=None,
-            analysis_timestamp=datetime.now(),
-            summary=summary,
-        )
+        return self.analysis_service.analyze_file(file_path)
 
     def refactor_file(
         self, file_path: str, refactor_type: RefactorType, output_path: Optional[str] = None
     ) -> RefactorResult:
         """
-        Refactor a code file
+        Refactor a code file.
+
+        Delegates to AppaveliCodeTransform.
 
         Args:
             file_path: Path to the file to refactor
@@ -118,40 +103,7 @@ class CodeMindAgent:
         Returns:
             RefactorResult with refactoring details
         """
-        self.logger.info(f"Refactoring file: {file_path} with type: {refactor_type.value}")
-
-        # Read original file
-        original_code = FileUtils.read_file(file_path)
-
-        # Detect language
-        language = self.language_detector.detect(file_path)
-        if not language:
-            raise ValueError(f"Unsupported file type: {file_path}")
-
-        # Perform refactoring using AI
-        refactored_code = self._refactor_code_with_ai(original_code, language, refactor_type)
-
-        # Create result object
-        result = RefactorResult(
-            success=True,
-            original_code=original_code,
-            refactored_code=refactored_code,
-            language=language,
-            refactor_type=refactor_type,
-            suggestions=[],
-            changes_made=["Code refactored using AI analysis"],
-            tokens_used=len(original_code.split()) + len(refactored_code.split()),
-            cost_estimate=self.llm_client.estimate_cost(
-                len(original_code.split()) + len(refactored_code.split())
-            ),
-        )
-
-        # Save refactored code if output path provided
-        if output_path:
-            FileUtils.write_file(output_path, refactored_code)
-            self.logger.info(f"Refactored code saved to: {output_path}")
-
-        return result
+        return self.code_transform.refactor_file(file_path, refactor_type, output_path)
 
     def generate_boilerplate(
         self, template_type: BoilerplateType, name: str, output_path: Optional[str] = None, **kwargs
@@ -226,7 +178,9 @@ class CodeMindAgent:
 
     def scan_project_security(self, project_path: str) -> SecurityScanResult:
         """
-        Perform comprehensive security scan of entire project
+        Perform comprehensive security scan of entire project.
+
+        Delegates to SecurityService.
 
         Args:
             project_path: Path to project directory
@@ -234,137 +188,12 @@ class CodeMindAgent:
         Returns:
             SecurityScanResult with comprehensive security analysis
         """
-        self.logger.info(f"Scanning project security: {project_path}")
+        return self.security_service.scan_project(project_path)
 
-        # Scan all supported files in the project
-        code_issues = []
-
-        # Find all supported code files
-        for ext in self.language_detector.get_supported_extensions():
-            files = FileUtils.find_files_by_extension(project_path, [ext])
-            for file_path in files:
-                try:
-                    content = FileUtils.read_file(file_path)
-                    language = self.language_detector.detect(file_path)
-                    if language:
-                        issues = self._scan_code_security(content, language)
-                        for issue in issues:
-                            issue.file_path = file_path
-                        code_issues.extend(issues)
-                except Exception as e:
-                    self.logger.warning(f"Could not scan {file_path}: {e}")
-
-        summary = {
-            "total_code_issues": len(code_issues),
-            "high_severity_issues": len(
-                [
-                    i
-                    for i in code_issues
-                    if i.severity in [SecuritySeverity.HIGH, SecuritySeverity.CRITICAL]
-                ]
-            ),
-            "total_dependency_vulnerabilities": 0,  # TODO: Implement dependency scanning
-            "critical_vulnerabilities": 0,
-        }
-
-        return SecurityScanResult(
-            file_path=project_path,
-            language=Language.JAVA,  # Default, not really applicable for project scan
-            code_issues=code_issues,
-            dependency_vulnerabilities=[],  # TODO: Implement later
-            scan_timestamp=datetime.now(),
-            summary=summary,
-            recommendations=self._generate_security_recommendations(code_issues),
-        )
-
-    def _scan_code_security(self, code: str, language: Language) -> List[SecurityIssue]:
-        """Scan code for security vulnerabilities using AI"""
-        prompt = f"""
-        Analyze this {language.value} code for security vulnerabilities:
-        
-        {code[:2000]}  # Truncate for cost efficiency
-        
-        Look for common issues like:
-        - SQL injection vulnerabilities
-        - XSS vulnerabilities  
-        - Authentication/authorization issues
-        - Input validation problems
-        - Hardcoded credentials
-        
-        Return a JSON array of issues with format:
-        [{{"type": "sql_injection", "severity": "high", "line": 15, "description": "...", "fix_suggestion": "..."}}]
-        """
-
-        try:
-            response = self.llm_client.chat_completion(
-                [
-                    {
-                        "role": "system",
-                        "content": "You are a security expert. Return only valid JSON.",
-                    },
-                    {"role": "user", "content": prompt},
-                ]
-            )
-
-            import json
-            import re
-
-            json_match = re.search(r"\[.*\]", response["content"], re.DOTALL)
-            if json_match:
-                issues_data = json.loads(json_match.group())
-                return [
-                    SecurityIssue(
-                        type=issue.get("type", "unknown"),
-                        severity=SecuritySeverity(issue.get("severity", "medium")),
-                        line=issue.get("line", 1),
-                        column=issue.get("column"),
-                        description=issue.get("description", ""),
-                        fix_suggestion=issue.get("fix_suggestion", ""),
-                    )
-                    for issue in issues_data
-                ]
-        except Exception as e:
-            self.logger.warning(f"Security scan failed: {e}")
-
-        return []
-
-    def _get_code_suggestions(self, code: str, language: Language) -> List[CodeSuggestion]:
-        """Get code improvement suggestions"""
-        return []  # Placeholder
-
-    def _refactor_code_with_ai(
-        self, code: str, language: Language, refactor_type: RefactorType
-    ) -> str:
-        """Refactor code using AI"""
-        prompt = f"""
-        Refactor this {language.value} code using {refactor_type.value.replace('_', ' ')} techniques:
-        
-        {code}
-        
-        Focus on:
-        - Code readability and maintainability
-        - Best practices for {language.value}
-        - Performance improvements
-        - Proper naming conventions
-        
-        Return only the refactored code without explanations.
-        """
-
-        try:
-            response = self.llm_client.chat_completion(
-                [
-                    {
-                        "role": "system",
-                        "content": f"You are an expert {language.value} developer. Return only clean, refactored code.",
-                    },
-                    {"role": "user", "content": prompt},
-                ]
-            )
-
-            return response["content"]
-        except Exception as e:
-            self.logger.error(f"Refactoring failed: {e}")
-            return code  # Return original code if refactoring fails
+    # Service delegation methods removed - now handled by dedicated services
+    # - Security scanning: SecurityService
+    # - Code analysis: AnalysisService
+    # - Refactoring: RefactorService
 
     def _generate_boilerplate_with_ai(
         self, template_type: BoilerplateType, name: str, **kwargs
@@ -550,46 +379,3 @@ class CodeMindAgent:
 
         return template_language_map.get(template_type, Language.JAVA)
 
-    def _generate_security_recommendations(self, issues: List[SecurityIssue]) -> List[str]:
-        """Generate security recommendations based on found issues"""
-        recommendations = [
-            "Implement input validation for all user inputs",
-            "Use parameterized queries to prevent SQL injection",
-            "Enable security headers in your web application",
-            "Regularly update dependencies to latest secure versions",
-            "Implement proper authentication and authorization",
-            "Use HTTPS for all communications",
-            "Implement proper error handling without exposing sensitive information",
-        ]
-
-        return recommendations
-
-    def _summarize_code(self, code: str, language: Language) -> str:
-        """Generate a high-level summary of code using AI"""
-        prompt = f"""
-        Summarize the following {language.value} code.
-
-        - Identify the purpose of the file
-        - Highlight major classes or functions
-        - Mention any key logic or responsibilities
-
-        Return a clear, professional summary under 150 words.
-
-        Code:
-        {code[:3000]}  # Truncate for token cost efficiency
-        """
-
-        try:
-            response = self.llm_client.chat_completion(
-                [
-                    {
-                        "role": "system",
-                        "content": "You are a senior software engineer who writes clear and concise code summaries.",
-                    },
-                    {"role": "user", "content": prompt},
-                ]
-            )
-            return response["content"].strip()
-        except Exception as e:
-            self.logger.warning(f"Code summarization failed: {e}")
-            return "Summary not available."
