@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import tempfile
@@ -6,7 +7,7 @@ from tempfile import NamedTemporaryFile
 from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile, status
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, status
 
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -19,6 +20,12 @@ from appaveli_codemind.core.models import (
 )
 from appaveli_codemind.web_api.auth import get_api_key_manager
 from appaveli_codemind.web_api.middleware import APIKeyMiddleware
+from appaveli_codemind.web_api.rate_limiter import get_upload_rate_limiter
+from appaveli_codemind.web_api.upload_validation import validate_upload
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -204,16 +211,35 @@ def list_api_keys(
 
 @app.post("/analyze/upload", response_model=AnalysisResponse)
 async def analyze_upload(
+    request: Request,
     file: UploadFile = File(...),
     summary_only: bool = Form(False),
 ):
     """
     Analyze an uploaded code file for security + summary.
     Accepts: multipart/form-data with 'file' and optional 'summary_only'.
+
+    Security:
+    - Rate limited per IP
+    - File size limit enforced
+    - Extension and MIME type validated
+    - Filename sanitized
     """
-    suffix = os.path.splitext(file.filename or "")[1]
+    # Check rate limit
+    get_upload_rate_limiter().check_rate_limit(request)
+
+    # Validate upload (size, extension, MIME type, filename)
+    safe_filename, file_size = await validate_upload(file)
+
+    logger.info(
+        f"Processing analyze upload: {safe_filename} ({file_size} bytes) "
+        f"from {request.client.host if request.client else 'unknown'}"
+    )
+
+    suffix = os.path.splitext(safe_filename)[1]
     with NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp_path = tmp.name
+        # File position already reset by validate_upload
         shutil.copyfileobj(file.file, tmp)
 
     try:
@@ -239,7 +265,7 @@ async def analyze_upload(
             )
 
         return AnalysisResponse(
-            file_path=file.filename or tmp_path,
+            file_path=safe_filename,
             language=result.language.value,
             line_count=result.line_count,
             summary=None if summary_only else result.summary,
@@ -254,14 +280,32 @@ async def analyze_upload(
 
 @app.post("/refactor/upload", response_model=RefactorResponse)
 async def refactor_upload(
+    request: Request,
     file: UploadFile = File(...),
     refactor_type: str = Form("general_cleanup"),
 ):
     """
     Refactor an uploaded code file using CodeMind.
     Accepts: multipart/form-data with 'file' and 'refactor_type'.
+
+    Security:
+    - Rate limited per IP
+    - File size limit enforced
+    - Extension and MIME type validated
+    - Filename sanitized
     """
-    suffix = os.path.splitext(file.filename or "")[1]
+    # Check rate limit
+    get_upload_rate_limiter().check_rate_limit(request)
+
+    # Validate upload (size, extension, MIME type, filename)
+    safe_filename, file_size = await validate_upload(file)
+
+    logger.info(
+        f"Processing refactor upload: {safe_filename} ({file_size} bytes) "
+        f"from {request.client.host if request.client else 'unknown'}"
+    )
+
+    suffix = os.path.splitext(safe_filename)[1]
     with NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp_path = tmp.name
         shutil.copyfileobj(file.file, tmp)
@@ -285,7 +329,7 @@ async def refactor_upload(
     refactored_lines = len(result.refactored_code.splitlines())
 
     return RefactorResponse(
-        file_path=file.filename or "(uploaded file)",
+        file_path=safe_filename,
         language=result.language.value,
         refactor_type=result.refactor_type.value,
         original_line_count=original_lines,
@@ -297,6 +341,7 @@ async def refactor_upload(
 
 @app.post("/security/upload", response_model=SecurityScanResponse)
 async def security_upload(
+    request: Request,
     file: UploadFile = File(...),
 ):
     """
@@ -306,10 +351,27 @@ async def security_upload(
 
     If a ZIP is uploaded, it is extracted and the entire project is scanned.
     If a single file is uploaded, it is placed in a temp dir and that dir is scanned.
+
+    Security:
+    - Rate limited per IP
+    - File size limit enforced (larger limit for ZIP files)
+    - Extension and MIME type validated
+    - Filename sanitized
     """
+    # Check rate limit
+    get_upload_rate_limiter().check_rate_limit(request)
+
+    # Validate upload (size, extension, MIME type, filename)
+    safe_filename, file_size = await validate_upload(file)
+
+    logger.info(
+        f"Processing security scan upload: {safe_filename} ({file_size} bytes) "
+        f"from {request.client.host if request.client else 'unknown'}"
+    )
+
     # Create a temp root directory for this scan
     temp_root = tempfile.mkdtemp(prefix="codemind-sec-")
-    original_name = file.filename or "upload"
+    original_name = safe_filename
 
     try:
         uploaded_path = os.path.join(temp_root, original_name)
