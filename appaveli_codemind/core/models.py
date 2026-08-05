@@ -102,9 +102,9 @@ class SecurityIssue:
     type: str
     severity: SecuritySeverity
     line: int
-    column: Optional[int]
     description: str
     fix_suggestion: str
+    column: Optional[int] = None
     file_path: Optional[str] = None
     rule_id: Optional[str] = None
     cwe_id: Optional[str] = None

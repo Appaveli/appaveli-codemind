@@ -1,30 +1,57 @@
 import pytest
 from unittest.mock import MagicMock, patch
+from datetime import datetime
 from appaveli_codemind.core.agent import CodeMindAgent
-from appaveli_codemind.core.models import RefactorType, Language
+from appaveli_codemind.core.models import AnalysisResult, RefactorResult, RefactorType, Language
 
 
-@patch("os.path.exists", return_value=True)
-@patch("appaveli_codemind.core.agent.FileUtils.read_file", return_value="public class Sample {}")
-@patch("appaveli_codemind.core.agent.LanguageDetector.detect", return_value=Language.JAVA)
-@patch("appaveli_codemind.core.agent.CodeMindAgent._scan_code_security", return_value=[])
-@patch("appaveli_codemind.core.agent.CodeMindAgent._get_code_suggestions", return_value=[])
-@patch("appaveli_codemind.core.agent.CodeMindAgent._summarize_code", return_value="Sample summary.")
-def test_analyze_file_valid(_, __, ___, ____, _____, ______):
+def test_analyze_file_valid():
+    """Test that analyze_file delegates to AppaveliAnalysisService."""
     agent = CodeMindAgent(api_key="test")
+
+    # Mock the analysis service
+    mock_result = AnalysisResult(
+        file_path="Sample.java",
+        language=Language.JAVA,
+        line_count=1,
+        security_issues=[],
+        code_suggestions=[],
+        complexity_score=None,
+        maintainability_score=None,
+        test_coverage_estimate=None,
+        analysis_timestamp=datetime.now(),
+        summary="Sample summary."
+    )
+    agent.analysis_service.analyze_file = MagicMock(return_value=mock_result)
+
     result = agent.analyze_file("Sample.java")
 
     assert result.language == Language.JAVA
     assert result.summary == "Sample summary."
     assert result.line_count == 1
+    agent.analysis_service.analyze_file.assert_called_once_with("Sample.java")
 
 
-@patch("appaveli_codemind.core.agent.FileUtils.read_file", return_value="print('Hello')")
-@patch("appaveli_codemind.core.agent.LanguageDetector.detect", return_value=Language.JAVASCRIPT)
-@patch("appaveli_codemind.core.agent.CodeMindAgent._refactor_code_with_ai", return_value="console.log('Hello');")
-def test_refactor_file_valid(_, __, ___):
+def test_refactor_file_valid():
+    """Test that refactor_file delegates to AppaveliCodeTransform."""
     agent = CodeMindAgent(api_key="test")
+
+    # Mock the code transform service
+    mock_result = RefactorResult(
+        success=True,
+        original_code="print('Hello')",
+        refactored_code="console.log('Hello');",
+        language=Language.JAVASCRIPT,
+        refactor_type=RefactorType.GENERAL_CLEANUP,
+        suggestions=[],
+        changes_made=["Refactored"],
+        tokens_used=10,
+        cost_estimate=0.001
+    )
+    agent.code_transform.refactor_file = MagicMock(return_value=mock_result)
+
     result = agent.refactor_file("hello.js", RefactorType.GENERAL_CLEANUP)
 
     assert result.success
     assert "console.log" in result.refactored_code
+    agent.code_transform.refactor_file.assert_called_once_with("hello.js", RefactorType.GENERAL_CLEANUP, None)
