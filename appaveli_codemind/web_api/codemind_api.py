@@ -53,7 +53,7 @@ allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip(
 
 app = FastAPI(
     title="Appaveli CodeMind API",
-    version="1.2.0",
+    version="1.3.0",
     description=(
         "Web API for Appaveli CodeMind – analysis, refactoring, security.\n\n"
         "## Authentication\n"
@@ -137,7 +137,7 @@ class APIKeyListResponse(BaseModel):
 @app.get("/health")
 def health():
     """Health check endpoint - no authentication required."""
-    return {"status": "ok", "service": "appaveli-codemind", "version": "1.2.0"}
+    return {"status": "ok", "service": "appaveli-codemind", "version": "1.3.0"}
 
 
 @app.post("/api-keys/create", response_model=APIKeyCreateResponse)

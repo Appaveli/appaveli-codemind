@@ -263,11 +263,11 @@ See our [Issues](https://github.com/appaveli/codemind/issues) for specific tasks
 
 ## 🗺️ Roadmap
 
-### Current Version: 1.2.0
+### Current Version: 1.3.0
 
 ### Upcoming Features
 
-**v1.3 - CLI Improvements**
+**v1.4 - CLI Improvements**
 - [ ] Interactive mode
 - [ ] Configuration file support (.codemind.yaml)
 - [ ] Watch mode for continuous analysis
