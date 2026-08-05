@@ -7,7 +7,7 @@ from tempfile import NamedTemporaryFile
 from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, status
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile, status
 
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -18,6 +18,7 @@ from appaveli_codemind.core.models import (
     RefactorType,
     SecuritySeverity,
 )
+from appaveli_codemind.web_api.agent_factory import get_agent
 from appaveli_codemind.web_api.auth import get_api_key_manager
 from appaveli_codemind.web_api.middleware import APIKeyMiddleware
 from appaveli_codemind.web_api.rate_limiter import get_upload_rate_limiter
@@ -77,18 +78,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
-
-# Lazy agent initialization (only create when needed, not at import time)
-# This allows tests to run without requiring API keys
-_agent: Optional[CodeMindAgent] = None
-
-
-def get_agent() -> CodeMindAgent:
-    """Get or create the CodeMind agent instance"""
-    global _agent
-    if _agent is None:
-        _agent = CodeMindAgent()
-    return _agent
 
 
 class SecurityIssueOut(BaseModel):
@@ -214,6 +203,7 @@ async def analyze_upload(
     request: Request,
     file: UploadFile = File(...),
     summary_only: bool = Form(False),
+    agent: CodeMindAgent = Depends(get_agent),
 ):
     """
     Analyze an uploaded code file for security + summary.
@@ -224,6 +214,9 @@ async def analyze_upload(
     - File size limit enforced
     - Extension and MIME type validated
     - Filename sanitized
+
+    Thread-safety:
+    - Each request gets its own agent instance (no shared state)
     """
     # Check rate limit
     get_upload_rate_limiter().check_rate_limit(request)
@@ -243,7 +236,7 @@ async def analyze_upload(
         shutil.copyfileobj(file.file, tmp)
 
     try:
-        result: AnalysisResult = get_agent().analyze_file(tmp_path)
+        result: AnalysisResult = agent.analyze_file(tmp_path)
 
         issues_out: List[SecurityIssueOut] = []
         for issue in result.security_issues:
@@ -283,6 +276,7 @@ async def refactor_upload(
     request: Request,
     file: UploadFile = File(...),
     refactor_type: str = Form("general_cleanup"),
+    agent: CodeMindAgent = Depends(get_agent),
 ):
     """
     Refactor an uploaded code file using CodeMind.
@@ -293,6 +287,9 @@ async def refactor_upload(
     - File size limit enforced
     - Extension and MIME type validated
     - Filename sanitized
+
+    Thread-safety:
+    - Each request gets its own agent instance (no shared state)
     """
     # Check rate limit
     get_upload_rate_limiter().check_rate_limit(request)
@@ -317,7 +314,7 @@ async def refactor_upload(
         rt_enum = RefactorType.GENERAL_CLEANUP
 
     try:
-        result = get_agent().refactor_file(tmp_path, rt_enum)
+        result = agent.refactor_file(tmp_path, rt_enum)
     finally:
         # we may still want to keep the temp file around if we later diff; for now, clean
         try:
@@ -343,6 +340,7 @@ async def refactor_upload(
 async def security_upload(
     request: Request,
     file: UploadFile = File(...),
+    agent: CodeMindAgent = Depends(get_agent),
 ):
     """
     Run a security scan on:
@@ -357,6 +355,9 @@ async def security_upload(
     - File size limit enforced (larger limit for ZIP files)
     - Extension and MIME type validated
     - Filename sanitized
+
+    Thread-safety:
+    - Each request gets its own agent instance (no shared state)
     """
     # Check rate limit
     get_upload_rate_limiter().check_rate_limit(request)
@@ -393,7 +394,7 @@ async def security_upload(
             project_root = extract_dir
 
         # Run CodeMind's project security scan
-        scan_result = get_agent().scan_project_security(project_root)
+        scan_result = agent.scan_project_security(project_root)
 
         issues_out: List[SecurityIssueOut] = []
         for issue in scan_result.code_issues:
