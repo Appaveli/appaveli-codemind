@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile, status
+from fastapi.responses import RedirectResponse
 
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -132,6 +133,12 @@ class APIKeyCreateResponse(BaseModel):
 
 class APIKeyListResponse(BaseModel):
     keys: List[Dict]
+
+
+@app.get("/")
+def root():
+    """Root endpoint - redirects to API documentation."""
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health")
